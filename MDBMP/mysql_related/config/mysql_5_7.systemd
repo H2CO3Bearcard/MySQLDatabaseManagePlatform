@@ -1,0 +1,53 @@
+# Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+#
+# systemd service file for MySQL forking server
+#
+
+[Unit]
+Description=MySQL Server
+After=network.target
+After=syslog.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+User={.RunUser}
+Group={.RunGroup}
+Type=forking
+
+PIDFile={.PidPath}
+
+TimeoutStartSec=0
+TimeoutStopSec=30
+
+# Execute pre and post scripts as root
+PermissionsStartOnly=true
+
+
+# Start main service
+ExecStart={.BaseDir}/bin/mysqld --defaults-file={.Mycnf} --daemonize --pid-file={.PidPath} --user={.RunUser} --socket={.SocketPath} --port={.Port}
+
+# Use this to switch malloc implementation
+EnvironmentFile=-/etc/sysconfig/mysql
+
+PrivateTmp=false
+
+LimitNOFILE = 65536
+LimitNPROC = 65536
+
+Environment="UMASK=0640"
+Environment="UMASK_DIR=0750"
