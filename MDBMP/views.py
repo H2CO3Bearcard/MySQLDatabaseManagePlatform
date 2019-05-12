@@ -137,6 +137,27 @@ def get_db_group(request):
 
 
 @login_required
+def add_db_group(request):
+    group_name = request.POST.get("group_name")
+    use = request.POST.get("use")
+    label = request.POST.get("label")
+    result = models.DatabaseGroup.objects.filter(group_name=group_name)
+    if result.exists():
+        status = 0
+        err_msg = "数据库组存在，请重新输入"
+        return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+    else:
+        status = 1
+        url = '/db_manage/'
+        sql = "insert into MDBMP_databasegroup(group_name,group_use,date,group_label,instance_number) values(%s,%s,now(),%s,0)"
+        db, cur = create_mysql_conn()
+        cur.execute(sql, [group_name, use, label])
+        db.commit()
+        db.close()
+        return HttpResponse(json.dumps({"status": status, "url": url}))
+
+
+@login_required
 def delete_db_group(request):
     group_id = request.POST.get("group_id")
     db, cur = create_mysql_conn()

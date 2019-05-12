@@ -33,6 +33,7 @@ urlpatterns = [
     url(r'^delete_server/', views.delete_server),
     url(r'^db_manage/', views.db_manage),
     url(r'^get_db_group/', views.get_db_group),
+    url(r'^add_db_group/', views.add_db_group),
     url(r'^delete_db_group/', views.delete_db_group),
     url(r'^get_db_instance/', views.get_db_instance),
     url(r'^get_permission/', views.get_permission),

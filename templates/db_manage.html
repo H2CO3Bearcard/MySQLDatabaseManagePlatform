@@ -292,6 +292,34 @@
         if (! group_name) {
             layer.msg('组名不能为空', {time: 2000, icon: 2});
             return false;
+        }else if(! use){
+            layer.msg('用途不能为空', {time: 2000, icon: 2});
+            return false;
+        }else if(! label){
+            layer.msg('标签不能为空', {time: 2000, icon: 2});
+            return false;
+        }else {
+            $.ajax({
+                url: '/add_db_group/',
+                dataType: 'JSON',
+                type: 'POST',
+                data: {
+                    "group_name": group_name,
+                    "use": use,
+                    "label": label
+                },
+                success: function (data) {
+                    if(data["status"]===0){
+                        layer.msg(data["err_msg"], {time: 2000, icon: 2});
+                    }else if(data["status"]===1){
+                        layer.msg("添加成功", {time: 2000, icon: 6});
+                        setTimeout(function () {
+                            location.href = data["url"]
+                        }, 2000);
+                    }
+                }
+            });
+            return false;
         }
     })
 </script>
