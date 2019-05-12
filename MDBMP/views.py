@@ -13,6 +13,7 @@ from MDBMP.server import link_server
 from MDBMP.server.execute_server_cmd import get_cpu, get_mem, get_hostname
 from MDBMP.mysql.json_date import JsonExtendEncoder
 from MDBMP.mysql.mysql_conn import create_mysql_conn
+from MDBMP.mysql.mysql_package import get_mysql_package
 # Create your views here.
 
 
@@ -116,6 +117,9 @@ def add_server(request):
 def db_manage(request):
     menus_obj, menu_grouop_obj = select_sidebar(request)
     server_obj = models.Server.objects.values('id', 'ip', 'hostname')
+    file = get_mysql_package()
+    print(file)
+    print(type(file[0]))
     print(server_obj)
     identity = admin_yes_or_no(request)
     return render(
@@ -124,7 +128,9 @@ def db_manage(request):
         {"menus_obj": menus_obj,
          "menu_grouop_obj": menu_grouop_obj,
          'server_obj': server_obj,
-         "identity": identity})
+         "identity": identity,
+         "file": file
+         })
 
 
 @login_required
