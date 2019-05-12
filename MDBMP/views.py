@@ -115,12 +115,15 @@ def add_server(request):
 @login_required
 def db_manage(request):
     menus_obj, menu_grouop_obj = select_sidebar(request)
+    server_obj = models.Server.objects.values('id', 'ip', 'hostname')
+    print(server_obj)
     identity = admin_yes_or_no(request)
     return render(
         request,
         "db_manage.html",
         {"menus_obj": menus_obj,
          "menu_grouop_obj": menu_grouop_obj,
+         'server_obj': server_obj,
          "identity": identity})
 
 

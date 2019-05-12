@@ -6,6 +6,7 @@ document.writeln('<link href="/static/css/animate.css" rel="stylesheet">');
 document.writeln('<link href="/static/css/style.css" rel="stylesheet">');
 document.writeln('<link rel="stylesheet" href="/static/css/plugins/bootstrap-table/bootstrap-table.min.css">');
 document.writeln('<link rel="stylesheet" href="/static/css/plugins/sweetalert/sweetalert.css">');
+document.writeln('<link rel="stylesheet" href="/static/css/plugins/bootstrap-select/bootstrap-select.min.css">');
 document.writeln('<script src="/static/js/jquery-3.1.1.min.js"></script>');
 document.writeln('<script src="/static/js/popper.min.js"></script>');
 document.writeln('<script src="/static/js/bootstrap.js"></script>');
@@ -17,3 +18,5 @@ document.writeln('<script src="/static/js/plugins/bootstrap-table/bootstrap-tabl
 document.writeln('<script src="/static/js/plugins/bootstrap-table/bootstrap-table-zh-CN.min.js"></script>');
 document.writeln('<script src="/static/js/plugins/sweetalert/sweetalert.min.js"></script>');
 document.writeln('<script src="/static/layer/layer.js"></script>');
+document.writeln('<script src="/static/js/plugins/bootstrap-select/bootstrap-select.min.js"></script>');
+document.writeln('<script src="/static/js/plugins/bootstrap-select/defaults-zh_CN.min.js"></script>');
