@@ -1,0 +1,249 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>M.D.B.M.P | 数据库管理</title>
+    <style>
+        .table-tr {
+            background-color: #b4c4d1 !important;
+            font-weight: bold;
+        }
+    </style>
+    <script src="/static/public_js/db_manage.js"></script>
+</head>
+
+<body>
+<div id="wrapper">
+    <nav class="navbar-default navbar-static-side" role="navigation">
+        <div class="sidebar-collapse">
+            <ul class="nav metismenu" id="side-menu">
+                <li class="nav-header">
+                    <div class="dropdown profile-element">
+                        <a href="/index/"><h1>M.D.B.M.P</h1></a>
+                    </div>
+                </li>
+                {% for foo in menu_grouop_obj %}
+                    <li class="sidebar">
+                        <a href="{{ foo.group_url }}"><i class="fa {{ foo.group_icon }}"></i> <span
+                                class="nav-label">{{ foo.group_name }}</span><span
+                                class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            {% for fooo in menus_obj %}
+                                {% if foo.id == fooo.menu_group_id %}
+                                    <li><a href="{{ fooo.menu_url }}">{{ fooo.menu_name }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </nav>
+    <div id="page-wrapper" class="gray-bg dashbard-1">
+        <div class="row border-bottom">
+            <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
+                <div class="navbar-header">
+                    <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i>
+                    </a>
+                </div>
+                <ul class="nav navbar-top-links navbar-right">
+                    <li style="padding: 20px">
+                        <span class="m-r-sm text-muted welcome-message"><i class="fa fa-user-o"> </i> {{ request.user }}，欢迎来到MySQL数据库管理平台</span>
+                    </li>
+                    <li style="padding: 10px;">
+                        <span class="text-muted text-xs block">您的身份是：{{ identity }}</span>
+                    </li>
+                    <li>
+                        <a href="/logout/">
+                            <i class="fa fa-sign-out"></i> 注销
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="row wrapper border-bottom white-bg page-heading">
+            <div class="col-lg-10">
+                <h2>数据库管理</h2>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="/index/">信息总览</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a>MySQL</a>
+                    </li>
+                    <li class="breadcrumb-item active">
+                        <strong>数据库管理</strong>
+                    </li>
+                </ol>
+            </div>
+        </div>
+        <div class="col-lg-12">
+            <div class="ibox">
+                <div class="ibox-title">
+                    <h5>数据库组</h5>
+                    <div class="ibox-tools">
+                        <a class="collapse-link">
+                            <i class="fa fa-chevron-up"></i>
+                        </a>
+                        <!-- Button trigger modal -->
+                        <button id="b1" type="button" class="btn btn-primary btn-sm">删除数据库组</button>
+                        <button id="b2" type="button" class="btn btn-primary btn-sm" data-toggle="modal"
+                                data-target="#addServerModal">添加数据库组
+                        </button>
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <table class="table table-bordered" id="dbGroupTable" data-height="230">
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-12">
+            <div class="ibox">
+                <div class="ibox-title">
+                    <h5>数据库实例</h5>
+                    <div class="ibox-tools">
+                        <a class="collapse-link">
+                            <i class="fa fa-chevron-up"></i>
+                        </a>
+                        <!-- Button trigger modal -->
+                        <button id="b1" type="button" class="btn btn-primary btn-sm" data-toggle="modal"
+                                data-target="#addServerModal">添加数据库实例
+                        </button>
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <table class="table table-bordered" id="dbInstanceTable">
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function get_db_instance(group_id) {
+        $("#dbInstanceTable").bootstrapTable('destroy');
+        $('#dbInstanceTable').bootstrapTable({
+            url: '/get_db_instance/?group_id=' + group_id,
+            method: 'POST',
+            pagination: false,
+            clickToSelect: true,//单击选中
+            paginationLoop: false,
+            pageNumber: 1, //初始化加载第一页
+            sidePagination: 'client',//server:服务器端分页|client：前端分页
+            pageSize: 5,//单页记录数
+            pageList: [2, 5, 10],//可选择单页记录数
+            showRefresh: false,//刷新按钮
+            search: false,//搜索框
+            columns: [{
+                field: 'group_name',
+                title: '数据库组名'
+            }, {
+                field: 'instance_id',
+                title: '实例ID'
+            }, {
+                field: 'port',
+                title: '端口'
+            }, {
+                field: 'high_availability',
+                title: '高可用方式'
+            }]
+        });
+    }
+    get_db_instance(0);
+    $("#b1").prop("disabled", true);
+    $('#dbGroupTable').bootstrapTable({
+        url: '/get_db_group/',
+        method: 'POST',
+        pagination: false,
+        clickToSelect: true,//单击选中
+        paginationLoop: false,
+        pageNumber: 1, //初始化加载第一页
+        sidePagination: 'client',//server:服务器端分页|client：前端分页
+        pageSize: 5,//单页记录数
+        pageList: [2, 5, 10],//可选择单页记录数
+        showRefresh: false,//刷新按钮
+        search: false,//搜索框
+        onClickRow: function (row, $element) {
+            var group_id = row.id;
+            if ($($element).is('.table-tr')) {
+                $($element).parent().children().removeClass("table-tr");
+                $("#dbInstanceTable").bootstrapTable('destroy');
+                get_db_instance(0);
+                $("#b1").val("");
+                $("#b1").prop("disabled", true)
+            } else {
+                $($element).parent().children().removeClass("table-tr");
+                $($element).addClass("table-tr");
+                get_db_instance(group_id)
+                $("#b1").val(group_id);
+                $("#b1").prop("disabled", false)
+            }
+        },
+        columns: [{
+            field: 'group_name',
+            title: '数据库组名',
+            width: '20%'
+        }, {
+            field: 'instance_number',
+            title: '实例数',
+            width: '20%'
+        }, {
+            field: 'group_label',
+            title: '标签',
+            width: '20%'
+        }, {
+            field: 'group_use',
+            title: '用途',
+            width: '20%'
+        }, {
+            field: 'date',
+            title: '创建时间',
+            width: '20%'
+        }]
+    });
+    $("#b1").on('click', function () {
+        var group_id = $(this).val();
+        console.log(group_id);
+        swal({
+                title: "你确定？",
+                text: "你将无法恢复这个数据库组",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "删除",
+                cancelButtonText: "取消",
+                closeOnConfirm: false,
+                closeOnCancel: false
+            },
+            function (isConfirm) {
+                if (isConfirm) {
+                    $.ajax({
+                        url: "/delete_db_group/",
+                        dataType: "json",
+                        type: 'POST',
+                        data: {
+                            "group_id": group_id
+                        },
+                        success: function (data) {
+                            if (data["status"] === 0) {
+                                swal("失败", data["err_msg"], "error");
+                            } else if (data["status"] === 1) {
+                                swal("成功", "用户删除成功", "success");
+                                $(".confirm").on('click', function () {
+                                    location.href=data["url"]
+                                })
+                            }
+                        }
+                    })
+                } else {
+                    swal("取消", "用户是安全的:)", "error");
+                }
+            });
+    })
+</script>
+</body>
+</html>

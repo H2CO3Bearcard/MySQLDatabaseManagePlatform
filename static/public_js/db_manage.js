@@ -1,0 +1,18 @@
+document.writeln('<link href="/static/css/bootstrap.min.css" rel="stylesheet">');
+document.writeln('<link href="/static/font-awesome/css/font-awesome.css" rel="stylesheet">');
+document.writeln('<link href="/static/css/plugins/toastr/toastr.min.css" rel="stylesheet">');
+document.writeln('<link href="/static/js/plugins/gritter/jquery.gritter.css" rel="stylesheet">');
+document.writeln('<link href="/static/css/animate.css" rel="stylesheet">');
+document.writeln('<link href="/static/css/style.css" rel="stylesheet">');
+document.writeln('<link rel="stylesheet" href="/static/css/plugins/bootstrap-table/bootstrap-table.min.css">');
+document.writeln('<link rel="stylesheet" href="/static/css/plugins/sweetalert/sweetalert.css">');
+document.writeln('<script src="/static/js/jquery-3.1.1.min.js"></script>');
+document.writeln('<script src="/static/js/popper.min.js"></script>');
+document.writeln('<script src="/static/js/bootstrap.js"></script>');
+document.writeln('<script src="/static/js/plugins/metisMenu/jquery.metisMenu.js"></script>');
+document.writeln('<script src="/static/js/plugins/slimscroll/jquery.slimscroll.min.js"></script>');
+document.writeln('<script src="/static/js/inspinia.js"></script>');
+document.writeln('<script src="/static/js/plugins/pace/pace.min.js"></script>');
+document.writeln('<script src="/static/js/plugins/bootstrap-table/bootstrap-table.min.js"></script>');
+document.writeln('<script src="/static/js/plugins/bootstrap-table/bootstrap-table-zh-CN.min.js"></script>');
+document.writeln('<script src="/static/js/plugins/sweetalert/sweetalert.min.js"></script>');

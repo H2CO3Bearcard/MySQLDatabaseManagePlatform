@@ -1,0 +1,386 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>M.D.B.M.P | 用户管理</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/font-awesome/css/font-awesome.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/plugins/sweetalert/sweetalert.css">
+    <link href="/static/css/animate.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <!-- Mainly scripts -->
+    <script src="/static/js/jquery-3.1.1.min.js"></script>
+    <script src="/static/js/popper.min.js"></script>
+    <script src="/static/js/bootstrap.js"></script>
+    <script src="/static/js/plugins/metisMenu/jquery.metisMenu.js"></script>
+    <script src="/static/js/plugins/slimscroll/jquery.slimscroll.min.js"></script>
+    <!-- Custom and plugin javascript -->
+    <script src="/static/js/inspinia.js"></script>
+    <script src="/static/js/plugins/pace/pace.min.js"></script>
+    <script src="/static/layer/layer.js"></script>
+    <script src="/static/js/plugins/sweetalert/sweetalert.min.js"></script>
+</head>
+
+<body>
+<!--内容开始-->
+<div id="wrapper">
+    <nav class="navbar-default navbar-static-side" role="navigation">
+        <div class="sidebar-collapse">
+            <ul class="nav metismenu" id="side-menu">
+                <li class="nav-header">
+                    <div class="dropdown profile-element">
+                        <a href="/index/"><h1>M.D.B.M.P</h1></a>
+                    </div>
+                </li>
+                {% for foo in menu_grouop_obj %}
+                 <li>
+                    <a href="{{ foo.group_url }}"><i class="fa {{ foo.group_icon }}"></i> <span class="nav-label">{{ foo.group_name }}</span><span
+                            class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level collapse">
+                        {% for fooo in menus_obj %}
+                            {% if foo.id == fooo.menu_group_id %}
+                                <li><a href="{{ fooo.menu_url }}">{{ fooo.menu_name }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </nav>
+
+    <div id="page-wrapper" class="gray-bg dashbard-1">
+        <div class="row border-bottom">
+            <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
+                <div class="navbar-header">
+                    <a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i>
+                    </a>
+                </div>
+                <ul class="nav navbar-top-links navbar-right">
+                    <li>
+                        <span id="sp1" class="m-r-sm text-muted welcome-message"><i class="fa fa-user-o"> </i> {{ request.user }}</span>
+                    </li>
+                    <li>
+                        <span class="m-r-sm welcome-message">欢迎来到MySQL数据库管理平台</span>
+                    </li>
+                    <li style="padding: 10px;">
+                        <span class="text-muted text-xs block">您的身份是：{{ identity }}</span>
+                    </li>
+                    <li>
+                        <a href="/logout/">
+                            <i class="fa fa-sign-out"></i> 注销
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="row wrapper border-bottom white-bg page-heading">
+            <div class="col-lg-10">
+                <h2>用户管理</h2>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="/index/">主页</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a>用户和权限管理</a>
+                    </li>
+                    <li class="breadcrumb-item active">
+                        <strong>用户管理</strong>
+                    </li>
+                </ol>
+            </div>
+        </div>
+        <div class="col-lg-12">
+            <div class="ibox">
+                <div class="ibox-title">
+                    <h5>用户列表</h5>
+                    <div class="ibox-tools">
+                        <a class="collapse-link">
+                            <i class="fa fa-chevron-up"></i>
+                        </a>
+                        <!-- Button trigger modal -->
+                        <button id="b1" type="button" class="btn btn-primary btn-sm" data-toggle="modal"
+                                data-target="#createUserModal">添加用户
+                        </button>
+                    </div>
+                </div>
+                <div class="ibox-content">
+                    <table class="table table-bordered">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>权限</th>
+                            <th>创建时间</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for user in user_obj_all %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    {% for foo in usermenu_obj_all %}
+                                        {% if user.id == foo.user_id %}
+                                            {% for fooo in menus_obj_all %}
+                                                {% if fooo.id == foo.menu_id %}
+                                                    <span class="badge badge-primary">{{ fooo.menu_name }}</span>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>{{ user.date_joined |date:"Y-m-j H:i:s"}}</td>
+                                <td>
+                                    {% if request.user.username != 'admin' and user.username == 'admin' %}
+                                        <button type="button" disabled="disabled" class="btn btn-outline btn-warning edit" data-toggle="modal"
+                                data-target="#editUserModal">修改</button>
+                                    {% else %}
+                                        <button type="button" class="btn btn-outline btn-warning edit" data-toggle="modal"
+                                data-target="#editUserModal">修改</button>
+                                    {% endif %}
+
+                                    {% if user.username == 'admin' %}
+                                        <button type="button" disabled="disabled" class="btn btn-outline btn-danger delete">删除</button>
+                                    {% else %}
+                                        <button type="button" class="btn btn-outline btn-danger delete">删除</button>
+                                    {% endif %}
+                                </td>
+                                <input type="hidden" value="{{ user.id }}">
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- 模态框开始 -->
+        <div class="modal fade" id="createUserModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">添加用户</h3>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">用户名</label>
+                                <div class="col-lg-8"><input id="i1" type="text" placeholder="请输入用户名" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">电子邮件</label>
+                                <div class="col-lg-8"><input id="i2" type="email" placeholder="请输入电子邮件" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">密码</label>
+                                <div class="col-lg-8"><input id="i3" type="password" placeholder="请输入密码" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">再次输入密码</label>
+                                <div class="col-lg-8"><input id="i4" type="password" placeholder="请再次输入密码" class="form-control">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button id="b3" type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                                <button id="b2" type="submit" class="btn btn-primary" data-dismiss="modal">添加</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="editUserModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">修改密码</h3>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <input id="i9" value="" type="hidden">
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">用户名</label>
+                                <div class="col-lg-8"><input id="i5" type="text" placeholder="请输入用户名" class="form-control" disabled="disabled">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">电子邮件</label>
+                                <div class="col-lg-8"><input id="i6" type="email" placeholder="请输入电子邮件" class="form-control" disabled="disabled">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">密码</label>
+                                <div class="col-lg-8"><input id="i7" type="password" placeholder="请输入密码" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">再次输入密码</label>
+                                <div class="col-lg-8"><input id="i8" type="password" placeholder="请再次输入密码" class="form-control">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button id="b5" type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                                <button id="b4" type="button" class="btn btn-primary" data-dismiss="modal">修改</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 模态框结束 -->
+    </div>
+</div>
+<!--内容结束-->
+<script>
+    //添加用户开始
+    $("#b2").on('click', function () {
+        var user = $("#i1").val();
+        var email = $("#i2").val();
+        var password1 = $("#i3").val();
+        var password2 = $("#i4").val();
+        var myReg=/^[a-zA-Z0-9_-]+@([a-zA-Z0-9]+\.)+(com|cn|net|org)$/;
+        if (! user){
+            layer.msg('用户名不能为空',{time:2000, icon:2});
+            return false;
+        }
+        else if(! email){
+            layer.msg('邮箱不能为空',{time:2000, icon:2});
+            return false;
+        }
+        else if(! myReg.test(email)){
+            layer.msg('邮箱格式不正确',{time:2000, icon:2});
+            return false;
+        } else if(! password1){
+            layer.msg('密码不能为空',{time:2000, icon:2});
+            return false;
+        } else if(password1 !== password2){
+            layer.msg('两次密码输入不一致',{time:2000, icon:2});
+            return false;
+        }
+        else {
+            $.post(
+                '/create_user/',{"user":user,"email":email,'password':password1},function (data) {
+                    data=JSON.parse(data);
+                    if(data["status"] === 0){
+                        layer.msg(data["err_msg"],{time:2000, icon:2});
+                    }else if(data["status"] === 1){
+                        $("#createUserModal").modal('hide');
+                        layer.msg("添加成功",{time:2000, icon:6});
+                        setTimeout(function () {
+                            location.href="/user_manage/"
+                        },2000);
+
+                    }
+                }
+            );
+            return false;
+        }
+    });
+    //添加用户结束
+
+    // 清除模态框input标签内容开始
+    $("#b3").on('click',function () {
+        $("#createUserModal input").each(function () {
+            $(this).val("")
+            }
+        )
+    });
+    $("#b5").on('click',function () {
+        $("#editUserModal input").each(function () {
+            $(this).val("")
+            }
+        )
+    });
+    // 清除模态框input标签内容结束
+
+    //修改用户信息开始
+    $("tbody").on('click',".edit",function () {
+        var $this = $(this)
+        var user = $this.parent().parent().children().eq(1).text();
+        var email = $this.parent().parent().children().eq(2).text();
+        var id = $this.parent().parent().children().eq(6).val();
+        $("#i5").val(user)
+        $("#i6").val(email)
+        $("#i9").val(id)
+    });
+    $("#b4").on('click',function () {
+        var user = $("#i5").val();
+        var email = $("#i6").val();
+        var password1 = $("#i7").val();
+        var password2 = $("#i8").val();
+        var id = $("#i9").val();
+        if(! password1){
+            layer.msg('密码不能为空',{time:2000, icon:2});
+            return false;
+        } else if(password1 !== password2){
+            layer.msg('两次密码输入不一致',{time:2000, icon:2});
+            return false;
+        }
+        else {
+            $.post(
+                '/edit_user/',{"user":user,"email":email,'password':password1,'id':id},function (data) {
+                    data=JSON.parse(data);
+                    if(data["status"] === 0){
+                        $("#editUserModal").modal('hide');
+                        layer.msg(data["err_msg"],{time:2000, icon:3});
+                        setTimeout(function () {
+                            location.href=data["url"]
+                        },2000);
+                    }else if(data["status"] === 1){
+                        $("#editUserModal").modal('hide');
+                        layer.msg("修改成功",{time:2000, icon:6});
+                        setTimeout(function () {
+                            location.href="/user_manage/"
+                        },2000);
+                    }
+                }
+            );
+            return false;
+        }
+    });
+    //修改用户信息结束
+
+    // 删除用户开始
+    $("tbody").on('click',".delete",function () {
+                    var $this = $(this);
+                    swal({
+                        title: "你确定？",
+                        text: "你将无法恢复这个用户",
+                        type: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#DD6B55",
+                        confirmButtonText: "删除",
+                        cancelButtonText: "取消",
+                        closeOnConfirm: false,
+                        closeOnCancel: false },
+                    function (isConfirm) {
+                        if (isConfirm) {
+                            user = $this.parent().parent().children().eq(1).text();
+                            $.ajax({
+                                url: "/delete_user/",
+                                dataType: "json",
+                                type: 'POST',
+                                data: {
+                                    "user": user
+                                },
+                                success: function (data) {
+                                    if (data["status"] === 0){
+                                        swal("失败", data["err_msg"], "error");
+                                    }else if(data["status"] === 1){
+                                        $this.parent().parent().remove();
+                                        swal("成功", "用户删除成功", "success");
+                                    }
+                                }
+                            })
+                        } else {
+                            swal("取消", "用户是安全的:)", "error");
+                        }
+                    });
+    });
+    // 删除用户结束
+</script>
+</body>
+</html>
