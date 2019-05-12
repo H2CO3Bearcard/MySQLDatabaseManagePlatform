@@ -13,6 +13,7 @@
         }
     </style>
     <script src="/static/public_js/db_manage.js"></script>
+
 </head>
 
 <body>
@@ -144,7 +145,7 @@
                         </a>
                         <!-- Button trigger modal -->
                         <button id="b1" type="button" class="btn btn-primary btn-sm" data-toggle="modal"
-                                data-target="#addServerModal">添加数据库实例
+                                data-target="#addDbInstanceModal">添加数据库实例
                         </button>
                     </div>
                 </div>
@@ -154,9 +155,52 @@
                 </div>
             </div>
         </div>
+        <div class="modal fade" id="addDbInstanceModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">添加数据库组</h3>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">标签</label>
+                                <div class="col-lg-8">
+                                    <select class="selectpicker form-control" id="s1">
+                                        <option>Mustard</option>
+                                        <option>Ketchup</option>
+                                        <option>Barbecue</option>
+                                        </select>
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">组名</label>
+                                <div class="col-lg-8"><input id="i5" type="text" class="form-control"
+                                                             placeholder="请输入组名">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">用途</label>
+                                <div class="col-lg-8"><input id="i6" type="text" placeholder="请输入用途"
+                                                             class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">标签</label>
+                                <div class="col-lg-8"><input id="i7" type="text" placeholder="请输入标签"
+                                                             class="form-control">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button id="b3" type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                                <button id="b4" type="button" class="btn btn-primary" data-dismiss="modal">添加</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <script>
+    //bootstrap table 生成数据库实例表格开始
     function get_db_instance(group_id) {
         $("#dbInstanceTable").bootstrapTable('destroy');
         $('#dbInstanceTable').bootstrapTable({
@@ -186,6 +230,7 @@
             }]
         });
     }
+    //bootstrap table 生成数据库实例表格结束
     get_db_instance(0);
     $("#b1").prop("disabled", true);
     $('#dbGroupTable').bootstrapTable({
@@ -265,7 +310,7 @@
                             if (data["status"] === 0) {
                                 swal("失败", data["err_msg"], "error");
                             } else if (data["status"] === 1) {
-                                swal("成功", "用户删除成功", "success");
+                                swal("成功", "数据库组删除成功:)", "success");
                                 $(".confirm").on('click', function () {
                                     location.href=data["url"]
                                 })
@@ -273,7 +318,7 @@
                         }
                     })
                 } else {
-                    swal("取消", "用户是安全的:)", "error");
+                    swal("取消", "这个数据库组是安全的:)", "error");
                 }
             });
     });
@@ -321,7 +366,8 @@
             });
             return false;
         }
-    })
+    });
+
 </script>
 </body>
 </html>
