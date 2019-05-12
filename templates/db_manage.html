@@ -91,13 +91,46 @@
                         <!-- Button trigger modal -->
                         <button id="b1" type="button" class="btn btn-primary btn-sm">删除数据库组</button>
                         <button id="b2" type="button" class="btn btn-primary btn-sm" data-toggle="modal"
-                                data-target="#addServerModal">添加数据库组
+                                data-target="#addDbGroupModal">添加数据库组
                         </button>
                     </div>
                 </div>
                 <div class="ibox-content">
                     <table class="table table-bordered" id="dbGroupTable" data-height="230">
                     </table>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="addDbGroupModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">添加数据库组</h3>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">组名</label>
+                                <div class="col-lg-8"><input id="i1" type="text" class="form-control"
+                                                             placeholder="请输入组名">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">用途</label>
+                                <div class="col-lg-8"><input id="i2" type="text" placeholder="请输入用途"
+                                                             class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">标签</label>
+                                <div class="col-lg-8"><input id="i3" type="text" placeholder="请输入标签"
+                                                             class="form-control">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button id="b3" type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                                <button id="b4" type="button" class="btn btn-primary" data-dismiss="modal">添加</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -243,6 +276,23 @@
                     swal("取消", "用户是安全的:)", "error");
                 }
             });
+    });
+    // 清除模态框input标签内容开始
+    $("#b3").on('click', function () {
+        $("#addDbGroupModal input").each(function () {
+                $(this).val("")
+            }
+        )
+    });
+    // 清除模态框input标签内容结束
+    $("#b4").on('click', function () {
+        var group_name = $("#i1").val();
+        var use = $("#i2").val();
+        var label = $("#i3").val();
+        if (! group_name) {
+            layer.msg('组名不能为空', {time: 2000, icon: 2});
+            return false;
+        }
     })
 </script>
 </body>

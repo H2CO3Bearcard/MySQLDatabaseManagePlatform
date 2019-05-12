@@ -16,3 +16,4 @@ document.writeln('<script src="/static/js/plugins/pace/pace.min.js"></script>');
 document.writeln('<script src="/static/js/plugins/bootstrap-table/bootstrap-table.min.js"></script>');
 document.writeln('<script src="/static/js/plugins/bootstrap-table/bootstrap-table-zh-CN.min.js"></script>');
 document.writeln('<script src="/static/js/plugins/sweetalert/sweetalert.min.js"></script>');
+document.writeln('<script src="/static/layer/layer.js"></script>');
