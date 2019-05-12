@@ -13,6 +13,7 @@
         }
     </style>
     <script src="/static/public_js/db_manage.js"></script>
+    <script src="/static/js/random.js"></script>
 </head>
 
 <body>
@@ -143,7 +144,7 @@
                             <i class="fa fa-chevron-up"></i>
                         </a>
                         <!-- Button trigger modal -->
-                        <button id="b1" type="button" class="btn btn-primary btn-sm" data-toggle="modal"
+                        <button id="btn-addDbIns" type="button" class="btn btn-primary btn-sm" data-toggle="modal"
                                 data-target="#addDbInstanceModal">添加数据库实例
                         </button>
                     </div>
@@ -159,10 +160,14 @@
             <div class="modal-dialog" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3 class="modal-title">添加数据库组</h3>
+                        <h3 class="modal-title">添加数据库实例</h3>
                     </div>
                     <div class="modal-body">
                         <form>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">数据库组</label>
+                                <div class="col-lg-8"><input disabled="disabled" value="1" id="i5" type="text" class="form-control">
+                                </div>
+                            </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">主机 IP</label>
                                 <div class="col-lg-8">
                                     <select class="selectpicker form-control" data-show-subtext="true" data-live-search="true" data-size="5" id="s1">
@@ -181,18 +186,46 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="form-group row"><label class="col-lg-3 col-form-label">安装版本</label>
-                                <div class="col-lg-8"><input id="i5" type="text" class="form-control"
-                                                             placeholder="请输入组名">
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">备份集</label>
+                                <div class="col-lg-8">
+                                    <select class="selectpicker form-control" data-live-search="true" data-size="5" id="s3">
+
+                                    </select>
                                 </div>
                             </div>
-                            <div class="form-group row"><label class="col-lg-3 col-form-label">用途</label>
-                                <div class="col-lg-8"><input id="i6" type="text" placeholder="请输入用途"
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">实例名</label>
+                                <div class="col-lg-8"><input id="i6" type="text" class="form-control" disabled="disabled">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">MySQL端口号</label>
+                                <div class="col-lg-8"><input id="i7" type="text" class="form-control"
+                                                             placeholder="请输入MySQL端口号">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">别名</label>
+                                <div class="col-lg-8"><input id="i8" type="text" class="form-control" disabled="disabled">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">MySQL用户</label>
+                                <div class="col-lg-8"><input id="i9" type="text" class="form-control"
+                                                             placeholder="请输入需要创建的MySQL超级用户名" value="root">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">MySQL密码</label>
+                                <div class="col-lg-8"><input id="i10" type="text" placeholder="请输入超级用户密码"
                                                              class="form-control">
                                 </div>
                             </div>
-                            <div class="form-group row"><label class="col-lg-3 col-form-label">标签</label>
-                                <div class="col-lg-8"><input id="i7" type="text" placeholder="请输入标签"
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">高可用方式</label>
+                                <div class="col-lg-8">
+                                    <select class="selectpicker form-control" data-live-search="true" data-size="5" id="s4">
+                                            <option value="主从复制-异步模式">主从复制-异步模式</option>
+                                            <option value="主从复制-半同步模式">主从复制-半同步模式</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">安装绝对路径</label>
+                                <div class="col-lg-8"><input id="i11" type="text" placeholder="请输入安装路径"
                                                              class="form-control">
                                 </div>
                             </div>
@@ -241,6 +274,7 @@
     //bootstrap table 生成数据库实例表格结束
     get_db_instance(0);
     $("#b1").prop("disabled", true);
+    $("#btn-addDbIns").prop("disabled", true);
     $('#dbGroupTable').bootstrapTable({
         url: '/get_db_group/',
         method: 'POST',
@@ -255,18 +289,31 @@
         search: false,//搜索框
         onClickRow: function (row, $element) {
             var group_id = row.id;
+            var group_name = row.group_name;
+            var instance_number = row.instance_number;
+            var mysql_id = 'mysql-' + randomWord(false, 8)
             if ($($element).is('.table-tr')) {
                 $($element).parent().children().removeClass("table-tr");
                 $("#dbInstanceTable").bootstrapTable('destroy');
                 get_db_instance(0);
                 $("#b1").val("");
-                $("#b1").prop("disabled", true)
+                $("#i6").val("");
+                $("#b1").prop("disabled", true);
+                $("#btn-addDbIns").prop("disabled", true)
             } else {
                 $($element).parent().children().removeClass("table-tr");
                 $($element).addClass("table-tr");
-                get_db_instance(group_id)
+                get_db_instance(group_id);
                 $("#b1").val(group_id);
-                $("#b1").prop("disabled", false)
+                $("#i6").val(mysql_id);
+                $("#b1").prop("disabled", false);
+                $("#i5").val(group_name);
+                $("#btn-addDbIns").prop("disabled", false);
+                if (instance_number === 0){
+                    $("#s3").prop('disabled', true)
+                }else {
+                    $("#s3").prop('disabled', false)
+                }
             }
         },
         columns: [{
@@ -375,7 +422,16 @@
             return false;
         }
     });
-
+    $("#i7").blur(function(){
+        var ip = $("#s1").find("option:selected").text();
+        var port = $("#i7").val();
+        $("#i8").val(ip+":"+port)
+    });
+    $("#s1").change(function(){
+        var ip = $("#s1").find("option:selected").text();
+        var port = $("#i7").val();
+        $("#i8").val(ip+":"+port)
+    });
 </script>
 </body>
 </html>
