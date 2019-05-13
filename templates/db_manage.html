@@ -12,8 +12,11 @@
             font-weight: bold;
         }
     </style>
+    <link rel="stylesheet" href="/static/css/loading.css">
     <script src="/static/public_js/db_manage.js"></script>
     <script src="/static/js/random.js"></script>
+    <script src="/static/js/loading.js"></script>
+    <script src="/static/js/loading-fun.js"></script>
 </head>
 
 <body>
@@ -165,11 +168,11 @@
                     <div class="modal-body">
                         <form>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">数据库组</label>
-                                <div class="col-lg-8"><input disabled="disabled" value="1" id="i5" type="text" class="form-control">
+                                <div class="col-lg-9"><input disabled="disabled" id="i5" type="text" class="form-control">
                                 </div>
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">主机 IP</label>
-                                <div class="col-lg-8">
+                                <div class="col-lg-9">
                                     <select class="selectpicker form-control" data-show-subtext="true" data-live-search="true" data-size="5" id="s1">
                                         {% for server in server_obj %}
                                             <option data-subtext="{{ server.hostname }}" value="{{ server.id }}">{{ server.ip }}</option>
@@ -178,7 +181,7 @@
                                 </div>
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">MySQL版本</label>
-                                <div class="col-lg-8">
+                                <div class="col-lg-9">
                                     <select class="selectpicker form-control" data-live-search="true" data-size="5" id="s2">
                                         {% for foo in file %}
                                             <option  value="{{ foo.pack_name }}">{{ foo.pack_name }}</option>
@@ -187,37 +190,37 @@
                                 </div>
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">备份集</label>
-                                <div class="col-lg-8">
+                                <div class="col-lg-9">
                                     <select class="selectpicker form-control" data-live-search="true" data-size="5" id="s3">
 
                                     </select>
                                 </div>
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">实例名</label>
-                                <div class="col-lg-8"><input id="i6" type="text" class="form-control" disabled="disabled">
+                                <div class="col-lg-9"><input id="i6" type="text" class="form-control" disabled="disabled">
                                 </div>
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">MySQL端口号</label>
-                                <div class="col-lg-8"><input id="i7" type="text" class="form-control"
+                                <div class="col-lg-9"><input id="i7" type="text" class="form-control"
                                                              placeholder="请输入MySQL端口号">
                                 </div>
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">别名</label>
-                                <div class="col-lg-8"><input id="i8" type="text" class="form-control" disabled="disabled">
+                                <div class="col-lg-9"><input id="i8" type="text" class="form-control" disabled="disabled">
                                 </div>
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">MySQL用户</label>
-                                <div class="col-lg-8"><input id="i9" type="text" class="form-control"
+                                <div class="col-lg-9"><input id="i9" type="text" class="form-control"
                                                              placeholder="请输入需要创建的MySQL超级用户名" value="root">
                                 </div>
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">MySQL密码</label>
-                                <div class="col-lg-8"><input id="i10" type="text" placeholder="请输入超级用户密码"
+                                <div class="col-lg-9"><input id="i10" type="text" placeholder="请输入超级用户密码"
                                                              class="form-control">
                                 </div>
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">高可用方式</label>
-                                <div class="col-lg-8">
+                                <div class="col-lg-9">
                                     <select class="selectpicker form-control" data-live-search="true" data-size="5" id="s4">
                                             <option value="主从复制-异步模式">主从复制-异步模式</option>
                                             <option value="主从复制-半同步模式">主从复制-半同步模式</option>
@@ -225,13 +228,13 @@
                                 </div>
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">安装绝对路径</label>
-                                <div class="col-lg-8"><input id="i11" type="text" placeholder="请输入安装路径"
+                                <div class="col-lg-9"><input id="i11" type="text" placeholder="请输入安装路径"
                                                              class="form-control">
                                 </div>
                             </div>
                             <div class="modal-footer">
-                                <button id="b3" type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
-                                <button id="b4" type="button" class="btn btn-primary" data-dismiss="modal">添加</button>
+                                <button id="b5" type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                                <button id="b6" type="button" class="btn btn-primary" data-dismiss="modal">添加</button>
                             </div>
                         </form>
                     </div>
@@ -291,6 +294,7 @@
             var group_id = row.id;
             var group_name = row.group_name;
             var instance_number = row.instance_number;
+            console.log(typeof instance_number)
             var mysql_id = 'mysql-' + randomWord(false, 8)
             if ($($element).is('.table-tr')) {
                 $($element).parent().children().removeClass("table-tr");
@@ -308,11 +312,12 @@
                 $("#i6").val(mysql_id);
                 $("#b1").prop("disabled", false);
                 $("#i5").val(group_name);
+                $("#i5").attr("group_id",group_id);
                 $("#btn-addDbIns").prop("disabled", false);
-                if (instance_number === 0){
-                    $("#s3").prop('disabled', true)
+                if (instance_number !== 0){
+                    $("button[data-id='s3']").prop("disabled", false)
                 }else {
-                    $("#s3").prop('disabled', false)
+                    $("button[data-id='s3']").prop("disabled", true);
                 }
             }
         },
@@ -382,7 +387,13 @@
         $("#addDbGroupModal input").each(function () {
                 $(this).val("")
             }
-        )
+        );
+    });
+    $("#b5").on('click', function () {
+        $("#addDbInstanceModal input:not('#i9'):not('#i5'):not('#i6')").each(function () {
+                $(this).val("")
+            }
+        );
     });
     // 清除模态框input标签内容结束
     $("#b4").on('click', function () {
@@ -422,6 +433,7 @@
             return false;
         }
     });
+    //填充别名开始
     $("#i7").blur(function(){
         var ip = $("#s1").find("option:selected").text();
         var port = $("#i7").val();
@@ -432,6 +444,63 @@
         var port = $("#i7").val();
         $("#i8").val(ip+":"+port)
     });
+    //填充别名结束
+    $("#b6").on('click', function () {
+        var group_id = $("#i5").attr("group_id");
+        var server_id = $("#s1").val();
+        var pack_name = $("#s2").val();
+        var backup_name = $("#s3").val();
+        var ins_name = $("#i6").val();
+        var port = $("#i7").val();
+        var alias = $("#i8").val();
+        var username = $("#i9").val();
+        var password = $("#i10").val();
+        var high_availability = $("#s4").val();
+        var path = $("#i11").val();
+        var portRegex = /^([0-9]|[1-9]\d{1,3}|[1-5]\d{4}|6[0-4]\d{4}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])$/;
+        var post_data = {
+            "group_id": group_id,
+            "server_id": server_id,
+            "pack_name": pack_name,
+            "backup_name" :backup_name,
+            "ins_name": ins_name,
+            "port": port,
+            "alias": alias,
+            "username": username,
+            "password": password,
+            "high_availability": high_availability,
+            "path": path
+        };
+        if(! port){
+            layer.msg('端口号不能为空', {time: 2000, icon: 2});
+            return false;
+        }else if(! portRegex.test(port)){
+            layer.msg('端口号格式不正确', {time: 2000, icon: 2});
+            return false;
+        }else if(!username){
+            layer.msg('MySQL超级用户不能为空', {time: 2000, icon: 2});
+            return false;
+        }else if(!password){
+            layer.msg('MySQL超级用户的密码为空', {time: 2000, icon: 2});
+            return false;
+        }else if(!path){
+            layer.msg('安装的绝对路径不能为空', {time: 2000, icon: 2});
+            return false;
+        } else {
+            loading1();
+            $("#addDbInstanceModal").modal("hide");
+            $.ajax({
+                url: '/install_mysql/',
+                dataType: 'JSON',
+                type: 'POST',
+                data: post_data,
+                success: function () {
+                    alert('yes')
+                    removeLoading('install')
+                }
+            })
+        }
+    })
 </script>
 </body>
 </html>
