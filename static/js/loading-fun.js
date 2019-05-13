@@ -1,6 +1,6 @@
 function loading1() {
 	$('body').loading({
-		loadingWidth:480,
+		loadingWidth:380,
 		title:'请稍后',
 		name:'install',
 		discription:'正在安装数据库实例',

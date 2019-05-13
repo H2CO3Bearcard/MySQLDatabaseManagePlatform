@@ -208,6 +208,15 @@ def get_db_instance(request):
 
 
 @login_required
+def install_mysql(request):
+    post_data = request.POST
+    import time
+    time.sleep(10)
+    print(post_data)
+    return HttpResponse(json.dumps({'status': 1}))
+
+
+@login_required
 def delete_server(request):
     server_id = request.POST.get("server_id")
     print(server_id)
