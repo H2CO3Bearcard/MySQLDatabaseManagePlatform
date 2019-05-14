@@ -115,6 +115,22 @@ def add_server(request):
 
 
 @login_required
+def delete_server(request):
+    server_id = request.POST.get("server_id")
+    db_ins_obj = models.DatabaseInstance.objects.filter(server_id=server_id)
+    if db_ins_obj.exists():
+        status = 0
+        err_msg = "当前主机还存在数据库实例，不可删除"
+        return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+    else:
+        server_obj = models.Server.objects.get(id=server_id)
+        server_obj.delete()
+        status = 1
+        return HttpResponse(json.dumps({"status": status}))
+
+
+
+@login_required
 def db_manage(request):
     menus_obj, menu_grouop_obj = select_sidebar(request)
     server_obj = models.Server.objects.values('id', 'ip', 'hostname')
@@ -283,15 +299,6 @@ def install_mysql(request):
                         sftp_conn.close()
                         ssh_conn.close()
                         return HttpResponse(json.dumps({"status": status, "url": url}))
-
-
-@login_required
-def delete_server(request):
-    server_id = request.POST.get("server_id")
-    server_obj = models.Server.objects.get(id=server_id)
-    server_obj.delete()
-    status = 1
-    return HttpResponse(json.dumps({"status": status}))
 
 
 @login_required

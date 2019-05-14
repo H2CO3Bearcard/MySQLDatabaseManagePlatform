@@ -1,6 +1,9 @@
 import random
 import time
 import traceback
+import logging
+
+logger = logging.getLogger('scripts')
 
 
 def send_file(sftp_conn, ssh_conn, file_name):
@@ -13,6 +16,7 @@ def send_file(sftp_conn, ssh_conn, file_name):
     result = stdout.read().decode(encoding="UTF-8")
     if result:
         print("文件存在，传输结束")
+        logger.info("文件存在，传输结束")
         return 1
     else:
         # 不存在就传输文件
@@ -83,7 +87,6 @@ class ModifyMysqlCnf(object):
         stdin,stdout,stderr = self.ssh_conn.exec_command('''mv {} {}'''.format("/tmp/mysql_5_7.systemd", systemd_file))
         stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's/{{.RunUser}}/{}/g' {}'''.format(privilege_user, systemd_file))
         stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's/{{.RunGroup}}/{}/g' {}'''.format(privilege_group, systemd_file))
-        print('''sed -i 's/{{.RunGroup}}/{}/g' {}'''.format(privilege_group, systemd_file))
         stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.PidPath}};{};g' {}'''.format(mysql_pid, systemd_file))
         stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.BaseDir}};{};g' {}'''.format(mysql_base, systemd_file))
         stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.Mycnf}};{};g' {}'''.format(mysql_cnf+"/my.cnf", systemd_file))

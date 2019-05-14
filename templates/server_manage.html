@@ -295,6 +295,8 @@
                                 $(".confirm").on('click', function () {
                                     location.href='/server_manage/'
                                 })
+                            }else if(data['status'] === 0){
+                                swal("失败", data['err_msg'], "error");
                             }
                         }
                     })
