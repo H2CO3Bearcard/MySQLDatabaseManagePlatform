@@ -9,3 +9,7 @@ def admin_yes_or_no(request):
         return "管理员"
     else:
         return "普通用户"
+
+
+if __name__ == '__main__':
+    pass

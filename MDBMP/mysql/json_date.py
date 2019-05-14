@@ -17,3 +17,7 @@ class JsonExtendEncoder(json.JSONEncoder):
             return o.strftime('%Y-%m-%d')
         else:
             return json.JSONEncoder.default(self, o)
+
+
+if __name__ == '__main__':
+    pass

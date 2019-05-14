@@ -36,3 +36,7 @@ def sftp_conn_host(hostname, port, username, password):
     else:
         return sftp
 
+
+if __name__ == '__main__':
+    pass
+

@@ -6,3 +6,6 @@ def create_mysql_conn():
     cur = db.cursor(cursor=pymysql.cursors.DictCursor)
     return db, cur
 
+
+if __name__ == '__main__':
+    pass

@@ -45,7 +45,14 @@ class DatabaseGroup(models.Model):
 
 class DatabaseInstance(models.Model):
     id = models.AutoField(primary_key=True)
+    server_id = models.IntegerField(null=False, unique=False)
+    mysql_version = models.CharField(null=False, unique=False, max_length=50)
     group_id = models.IntegerField(null=False, unique=False)
     instance_id = models.CharField(null=False, unique=False, max_length=25)
+    instance_alias = models.CharField(null=False, unique=False, max_length=50)
+    username = models.CharField(null=False, unique=False, max_length=50)
+    password = models.CharField(null=False, unique=False, max_length=50)
+    mysql_path = models.CharField(null=False, unique=False, max_length=50)
     port = models.IntegerField(null=False)
     high_availability = models.CharField(null=False, max_length=25)
+

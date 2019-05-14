@@ -1,6 +1,6 @@
-import paramiko
 import random
 import time
+import traceback
 
 
 def send_file(sftp_conn, ssh_conn, file_name):
@@ -17,7 +17,7 @@ def send_file(sftp_conn, ssh_conn, file_name):
     else:
         # 不存在就传输文件
         sftp_conn = sftp_conn
-        local_path = "./package/" + file_name
+        local_path = "./MDBMP/mysql_related/config/" + file_name
         server_path = "/tmp/" + file_name
         sftp_conn.put(local_path, server_path)
         return 0
@@ -45,7 +45,7 @@ def send_package(sftp_conn, ssh_conn, package_name):
     else:
         # 不存在就传输安装包
         sftp_conn = sftp_conn
-        local_path = "./package/" + mysql_package
+        local_path = "./MDBMP/mysql_related/mysql_package/" + mysql_package
         server_path = "/tmp/" + mysql_package
         sftp_conn.put(local_path, server_path)
         if version == 5.7:
@@ -68,7 +68,7 @@ class ModifyMysqlCnf(object):
         cnf_dir = self.cnf_dir + "/my.cnf"
         stdin, stdout, stderr = self.ssh_conn.exec_command("egrep -iw {} {}".format(var_option, cnf_dir))
         potion = stdout.read().decode(encoding='UTF-8').strip("\n")
-        self.ssh_conn.exec_command('''sed -i 's;{};{} = {};' {}'''.format(potion, var_option, var_values, cnf_dir))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{};{} = {};' {}'''.format(potion, var_option, var_values, cnf_dir))
 
     def modify_systemd(self, privilege_user, privilege_group, mysql_pid, mysql_base, mysql_cnf, mysql_socket, mysql_port):
         privilege_user = privilege_user
@@ -80,28 +80,29 @@ class ModifyMysqlCnf(object):
         mysql_port = mysql_port
         systemd_file = '/etc/systemd/system/mysqld_{}.service'.format(mysql_port)
 
-        self.ssh_conn.exec_command('''mv {} {}'''.format("/tmp/mysql_5_7.systemd", systemd_file))
-        self.ssh_conn.exec_command('''sed -i 's/{{.RunUser}}/{}/g' {}'''.format(privilege_user, systemd_file))
-        self.ssh_conn.exec_command('''sed -i 's/{{.RunGroup}}/{}/g' {}'''.format(privilege_group, systemd_file))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''mv {} {}'''.format("/tmp/mysql_5_7.systemd", systemd_file))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's/{{.RunUser}}/{}/g' {}'''.format(privilege_user, systemd_file))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's/{{.RunGroup}}/{}/g' {}'''.format(privilege_group, systemd_file))
         print('''sed -i 's/{{.RunGroup}}/{}/g' {}'''.format(privilege_group, systemd_file))
-        self.ssh_conn.exec_command('''sed -i 's;{{.PidPath}};{};g' {}'''.format(mysql_pid, systemd_file))
-        self.ssh_conn.exec_command('''sed -i 's;{{.BaseDir}};{};g' {}'''.format(mysql_base, systemd_file))
-        self.ssh_conn.exec_command('''sed -i 's;{{.Mycnf}};{};g' {}'''.format(mysql_cnf+"/my.cnf", systemd_file))
-        self.ssh_conn.exec_command('''sed -i 's;{{.SocketPath}};{};g' {}'''.format(mysql_socket, systemd_file))
-        self.ssh_conn.exec_command('''sed -i 's;{{.Port}};{};g' {}'''.format(mysql_port, systemd_file))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.PidPath}};{};g' {}'''.format(mysql_pid, systemd_file))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.BaseDir}};{};g' {}'''.format(mysql_base, systemd_file))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.Mycnf}};{};g' {}'''.format(mysql_cnf+"/my.cnf", systemd_file))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.SocketPath}};{};g' {}'''.format(mysql_socket, systemd_file))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.Port}};{};g' {}'''.format(mysql_port, systemd_file))
 
     def empowerment(self, dir_name, pri_user, pri_group):
         dir_name = dir_name
         pri_user = pri_user
         pri_group = pri_group
-        self.ssh_conn.exec_command('''chown -R {}:{} {}'''.format(pri_user, pri_group, dir_name))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''chown -R {}:{} {}'''.format(pri_user, pri_group, dir_name))
 
     def make_dir(self, dir_name, pri_user, pri_group):
         dir_name = dir_name
         pri_user = pri_user
         pri_group = pri_group
-        self.ssh_conn.exec_command('''mkdir -p {}'''.format(dir_name))
-        self.ssh_conn.exec_command('''chown -R {}:{} {}'''.format(pri_user, pri_group, dir_name))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''mkdir -p {}'''.format(dir_name))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''chown -R {}:{} {}'''.format(pri_user, pri_group, dir_name))
+        time.sleep(1)
 
     def create_user(self, pri_user, pri_group):
         pri_user = pri_user
@@ -126,7 +127,7 @@ class ModifyMysqlCnf(object):
     def move_file(self, old_location, new_location):
         old_location = old_location
         new_location = new_location
-        self.ssh_conn.exec_command('''mv {} {}'''.format(old_location, new_location))
+        stdin,stdout,stderr = self.ssh_conn.exec_command('''mv {} {}'''.format(old_location, new_location))
 
     def unpack_package(self, mysql_package, unpack_dir):
         mysql_package = '/tmp/' + mysql_package
@@ -191,69 +192,79 @@ class ModifyMysqlCnf(object):
                         return 0
 
 
-def install_mysql(ssh_conn, mysql_package, mysql_port, mysql_dir, mysql_user, mysql_password, pri_user, pri_group, hostname):
-    ssh_conn = ssh_conn
-    hostname = hostname
-    mysql_package = mysql_package
-    mysql_version = mysql_package.partition("-")[2].partition("-")[0]
-    mysql_port = mysql_port
-    mysql_server_id = random.randint(1, 4294967295)
-    mysql_dir = mysql_dir
-    if mysql_dir[-1] == "/":
-        mysql_dir = mysql_dir + "mysql"
-    else:
-        mysql_dir = mysql_dir + "/mysql"
-    mysql_base = mysql_dir + "/base/" + mysql_version
-    mysql_data = mysql_dir + "/data/" + str(mysql_port)
-    mysql_log = mysql_dir + "/log"
-    mysql_binlog_dir = mysql_log + "/binlog/" + str(mysql_port)
-    mysql_binlog = mysql_binlog_dir + "/mysql_bin"
-    mysql_redolog = mysql_log + "/redolog/" + str(mysql_port)
-    mysql_relaylog_dir = mysql_log + "/relaylog/" + str(mysql_port)
-    mysql_relaylog = mysql_relaylog_dir + "/mysql-relay"
-    mysql_err = mysql_data + "/mysql-error.log"
-    mysql_slow = mysql_data + "/mysql-slow.log"
-    mysql_tmp = mysql_dir + "/tmp/" + str(mysql_port)
-    mysql_backup = mysql_dir + "/backup/" + str(mysql_port)
-    mysql_cnf = mysql_dir + "/etc/" + str(mysql_port)
-    mysql_socket = mysql_data + "/mysqld.socket"
-    mysql_pid = mysql_data + "/mysqld.pid"
-    install_mysql_lock_file = mysql_dir + "/base/" + mysql_version + '/INSTALL_MYSQL_LOCK'
-    privilege_user = pri_user
-    privilege_group = pri_group
-    mysql_user = mysql_user
-    mysql_password = mysql_password
+def install_mysql_ins(ssh_conn, mysql_package, mysql_port, mysql_dir, mysql_user, mysql_password, pri_user, pri_group, hostname):
+    try:
+        ssh_conn = ssh_conn
+        hostname = hostname
+        mysql_package = mysql_package
+        mysql_version = mysql_package.partition("-")[2].partition("-")[0]
+        mysql_port = mysql_port
+        mysql_server_id = random.randint(1, 4294967295)
+        mysql_dir = mysql_dir
+        if mysql_dir[-1] == "/":
+            mysql_dir = mysql_dir + "mysql"
+        else:
+            mysql_dir = mysql_dir + "/mysql"
+        mysql_base = mysql_dir + "/base/" + mysql_version
+        mysql_data = mysql_dir + "/data/" + str(mysql_port)
+        mysql_log = mysql_dir + "/log"
+        mysql_binlog_dir = mysql_log + "/binlog/" + str(mysql_port)
+        mysql_binlog = mysql_binlog_dir + "/mysql_bin"
+        mysql_redolog = mysql_log + "/redolog/" + str(mysql_port)
+        mysql_relaylog_dir = mysql_log + "/relaylog/" + str(mysql_port)
+        mysql_relaylog = mysql_relaylog_dir + "/mysql-relay"
+        mysql_err = mysql_data + "/mysql-error.log"
+        mysql_slow = mysql_data + "/mysql-slow.log"
+        mysql_tmp = mysql_dir + "/tmp/" + str(mysql_port)
+        mysql_backup = mysql_dir + "/backup/" + str(mysql_port)
+        mysql_cnf = mysql_dir + "/etc/" + str(mysql_port)
+        mysql_socket = mysql_data + "/mysqld.socket"
+        mysql_pid = mysql_data + "/mysqld.pid"
+        install_mysql_lock_file = mysql_dir + "/base/" + mysql_version + '/INSTALL_MYSQL_LOCK'
+        privilege_user = pri_user
+        privilege_group = pri_group
+        mysql_user = mysql_user
+        mysql_password = mysql_password
 
-    modifly = ModifyMysqlCnf(ssh_conn, mysql_cnf)
-    modifly.create_user('mysql', 'mysql')
-    if modifly.judge_dir(mysql_dir) == 1:
-        modifly.make_dir(mysql_dir, privilege_user, privilege_group)
+        modifly = ModifyMysqlCnf(ssh_conn, mysql_cnf)
+        modifly.create_user('mysql', 'mysql')
+        if modifly.judge_dir(mysql_dir) == 1:
+            modifly.make_dir(mysql_dir, privilege_user, privilege_group)
 
-    if modifly.judge_dir(install_mysql_lock_file) == 1:
-        modifly.make_dir(mysql_base, privilege_user, privilege_group)
-        ssh_conn.exec_command("touch {}".format(install_mysql_lock_file))
-        modifly.make_dir(mysql_base, privilege_user, privilege_group)
-        modifly.unpack_package(mysql_package, mysql_base)
+        if modifly.judge_dir(install_mysql_lock_file) == 1:
+            modifly.make_dir(mysql_base, privilege_user, privilege_group)
+            ssh_conn.exec_command("touch {}".format(install_mysql_lock_file))
+            modifly.make_dir(mysql_base, privilege_user, privilege_group)
+            modifly.unpack_package(mysql_package, mysql_base)
+        else:
+            print("base目录存在")
+        list = [mysql_data, mysql_log, mysql_binlog_dir, mysql_redolog, mysql_relaylog_dir, mysql_tmp, mysql_backup, mysql_cnf]
+        for i in list:
+            modifly.make_dir(i, privilege_user, privilege_group)
+        modifly.empowerment(mysql_dir, privilege_user, privilege_group)
+        modifly.move_file("/tmp/my_5_7.cnf", "{}/my.cnf".format(mysql_cnf))
+        modifly.empowerment("{}/my.cnf".format(mysql_cnf), privilege_user, privilege_group)
+        modifly.modify_cnf("port", mysql_port)
+        modifly.modify_cnf("server_id", mysql_server_id)
+        modifly.modify_cnf("basedir", mysql_base)
+        modifly.modify_cnf("datadir", mysql_data)
+        modifly.modify_cnf("log_bin", mysql_binlog)
+        modifly.modify_cnf("tmpdir", mysql_tmp)
+        modifly.modify_cnf("relay_log", mysql_relaylog)
+        modifly.modify_cnf("innodb_log_group_home_dir", mysql_redolog)
+        modifly.modify_cnf("log_error", mysql_err)
+        modifly.modify_cnf("slow_query_log_file", mysql_slow)
+        modifly.modify_cnf("socket", mysql_socket)
+        modifly.modify_cnf("pid_file", mysql_pid)
+        modifly.modify_cnf("report_host", hostname)
+        modifly.modify_systemd(privilege_user, privilege_group, mysql_pid, mysql_base, mysql_cnf, mysql_socket, mysql_port)
+        modifly.run_mysql(mysql_base, mysql_user, mysql_password, privilege_user, mysql_port, mysql_socket)
+    except Exception as err:
+        error = traceback.format_exc(err)
+        return 0, error
     else:
-        print("base目录存在")
-    list = [mysql_data, mysql_log, mysql_binlog_dir, mysql_redolog, mysql_relaylog_dir, mysql_tmp, mysql_backup, mysql_cnf]
-    for i in list:
-        modifly.make_dir(i, privilege_user, privilege_group)
-    modifly.empowerment(mysql_dir, privilege_user, privilege_group)
-    modifly.move_file("/tmp/my_5_7.cnf", "{}/my.cnf".format(mysql_cnf))
-    modifly.empowerment("{}/my.cnf".format(mysql_cnf), privilege_user, privilege_group)
-    modifly.modify_cnf("port", mysql_port)
-    modifly.modify_cnf("server_id", mysql_server_id)
-    modifly.modify_cnf("basedir", mysql_base)
-    modifly.modify_cnf("datadir", mysql_data)
-    modifly.modify_cnf("log_bin", mysql_binlog)
-    modifly.modify_cnf("tmpdir", mysql_tmp)
-    modifly.modify_cnf("relay_log", mysql_relaylog)
-    modifly.modify_cnf("innodb_log_group_home_dir", mysql_redolog)
-    modifly.modify_cnf("log_error", mysql_err)
-    modifly.modify_cnf("slow_query_log_file", mysql_slow)
-    modifly.modify_cnf("socket", mysql_socket)
-    modifly.modify_cnf("pid_file", mysql_pid)
-    modifly.modify_cnf("report_host", hostname)
-    modifly.modify_systemd(privilege_user, privilege_group, mysql_pid, mysql_base, mysql_cnf, mysql_socket, mysql_port)
-    modifly.run_mysql(mysql_base, mysql_user, mysql_password, privilege_user, mysql_port, mysql_socket)
+        return 1, mysql_version
+
+
+if __name__ == '__main__':
+    pass

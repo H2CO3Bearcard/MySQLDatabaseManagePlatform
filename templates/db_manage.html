@@ -234,7 +234,7 @@
                             </div>
                             <div class="modal-footer">
                                 <button id="b5" type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
-                                <button id="b6" type="button" class="btn btn-primary" data-dismiss="modal">添加</button>
+                                <button id="b6" type="button" class="btn btn-primary">添加</button>
                             </div>
                         </form>
                     </div>
@@ -266,11 +266,20 @@
                 field: 'instance_id',
                 title: '实例ID'
             }, {
+                field: 'instance_alias',
+                title: '实例别名'
+            }, {
                 field: 'port',
                 title: '端口'
             }, {
+                field: 'mysql_version',
+                title: '安装版本'
+            }, {
                 field: 'high_availability',
                 title: '高可用方式'
+            }, {
+                field: 'mysql_path',
+                title: '安装路径'
             }]
         });
     }
@@ -294,7 +303,6 @@
             var group_id = row.id;
             var group_name = row.group_name;
             var instance_number = row.instance_number;
-            console.log(typeof instance_number)
             var mysql_id = 'mysql-' + randomWord(false, 8)
             if ($($element).is('.table-tr')) {
                 $($element).parent().children().removeClass("table-tr");
@@ -494,9 +502,17 @@
                 dataType: 'JSON',
                 type: 'POST',
                 data: post_data,
-                success: function () {
-                    alert('yes');
-                    removeLoading('install')
+                success: function (data) {
+                    if(data['status']===1||data['status']===2||data['status']===3||data['status']===4||data['status']===6||data['status']===7){
+                        removeLoading('install');
+                        layer.alert(data["err_msg"],{icon:3});
+                    }else if(data["status"] === 5){
+                        removeLoading('install');
+                        layer.msg("创建数据库实例成功",{time:2000, icon:6});
+                        setTimeout(function () {
+                            location.href=data['url']
+                        },2000);
+                    }
                 }
             })
         }

@@ -13,3 +13,7 @@ def select_sidebar(request):
         menu_group_id_list.append(menu_grouop.menu_group_id)
     menu_grouop_obj = models.MenusGroup.objects.filter(id__in=menu_group_id_list)
     return menus_obj, menu_grouop_obj
+
+
+if __name__ == '__main__':
+    pass

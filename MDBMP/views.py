@@ -14,6 +14,7 @@ from MDBMP.server.execute_server_cmd import get_cpu, get_mem, get_hostname
 from MDBMP.mysql.json_date import JsonExtendEncoder
 from MDBMP.mysql.mysql_conn import create_mysql_conn
 from MDBMP.mysql.mysql_package import get_mysql_package
+from MDBMP.mysql.install_mysql import send_package, install_mysql_ins
 # Create your views here.
 
 
@@ -93,7 +94,7 @@ def add_server(request):
             return HttpResponse(json.dumps({"status": status, "err_msg":err_msg}))
         elif ssh_conn == 2:
             status = 2
-            err_msg = "连接超时，请检查IP、用户名、密码是否错误"
+            err_msg = "连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
             return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
         else:
             status = 0
@@ -118,9 +119,6 @@ def db_manage(request):
     menus_obj, menu_grouop_obj = select_sidebar(request)
     server_obj = models.Server.objects.values('id', 'ip', 'hostname')
     file = get_mysql_package()
-    print(file)
-    print(type(file[0]))
-    print(server_obj)
     identity = admin_yes_or_no(request)
     return render(
         request,
@@ -140,7 +138,6 @@ def get_db_group(request):
     cur.execute(sql)
     data = cur.fetchall()
     data = json.dumps(data, cls=JsonExtendEncoder)
-    print(data)
     db.close()
     return HttpResponse(data)
 
@@ -193,33 +190,104 @@ def delete_db_group(request):
 def get_db_instance(request):
     db, cur = create_mysql_conn()
     group_id = request.GET.get("group_id", None)
-    print(group_id)
     if int(group_id) > 0:
-        sql = "select a.group_name,b.* from MDBMP_databaseinstance b, MDBMP_databasegroup a where a.id = b.group_id and  a.id=%s"
+        sql = "select a.group_name,b.* " \
+              "from MDBMP_databaseinstance b, MDBMP_databasegroup a " \
+              "where a.id = b.group_id and  a.id=%s"
         cur.execute(sql, group_id)
     else:
-        sql = "select a.group_name,b.* from MDBMP_databaseinstance b, MDBMP_databasegroup a where a.id = b.group_id"
+        sql = "select a.group_name,b.* " \
+              "from MDBMP_databaseinstance b, MDBMP_databasegroup a " \
+              "where a.id = b.group_id"
         cur.execute(sql)
     data = cur.fetchall()
     data = json.dumps(data, cls=JsonExtendEncoder)
-    print(data)
     db.close()
     return HttpResponse(data)
 
 
 @login_required
 def install_mysql(request):
-    post_data = request.POST
-    import time
-    time.sleep(10)
-    print(post_data)
-    return HttpResponse(json.dumps({'status': 1}))
+    group_id = request.POST.get("group_id")
+    server_id = request.POST.get("server_id")
+    pack_name = request.POST.get("pack_name")
+    backup_name = request.POST.get("backup_name")
+    ins_name = request.POST.get("ins_name")
+    port = request.POST.get("port")
+    alias = request.POST.get("alias")
+    username = request.POST.get("username")
+    password = request.POST.get("password")
+    high_availability = request.POST.get("high_availability")
+    path = request.POST.get("path")
+    if backup_name:
+        pass
+    else:
+        server_obj = models.Server.objects.values('ip', 'user', 'password', 'ssh_port').get(id=server_id)
+        ip = server_obj['ip']
+        server_user = server_obj['user']
+        server_pwd = server_obj['password']
+        ssh_port = server_obj['ssh_port']
+        result = models.DatabaseInstance.objects.filter(server_id=server_id, port=port)
+        if result.exists():
+            status = 6
+            err_msg = "当前主机({})上存在{}端口,请检查是否填写错误".format(ip, port)
+            return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+        else:
+            ssh_conn = link_server.ssh_conn_host(ip, ssh_port, server_user, server_pwd)
+            if ssh_conn == 1:
+                status = 1
+                err_msg = "SSH连接失败，请检查IP、用户名、密码是否错误"
+                return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+            elif ssh_conn == 2:
+                status = 2
+                err_msg = "SSH连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
+                return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+            else:
+                sftp_conn = link_server.sftp_conn_host(ip, ssh_port, server_user, server_pwd)
+                if sftp_conn == 1:
+                    status = 3
+                    err_msg = "SFTP连接失败，请检查IP、用户名、密码是否错误"
+                    return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+                elif sftp_conn == 2:
+                    status = 4
+                    err_msg = "SFTP连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
+                    return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+                else:
+                    send_package(sftp_conn, ssh_conn, pack_name)
+                    sftp_conn.close()
+                    stdout, mysql_version = install_mysql_ins(ssh_conn, pack_name, port, path, username, password, 'mysql', 'mysql', ip)
+                    if stdout == 0:
+                        status = 7
+                        err_msg = mysql_version
+                        sftp_conn.close()
+                        ssh_conn.close()
+                        return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+                    else:
+                        status = 5
+                        url = '/db_manage/'
+                        dbins_obj = models.DatabaseInstance(
+                            server_id=server_id,
+                            mysql_version=mysql_version,
+                            group_id=group_id,
+                            instance_id=ins_name,
+                            instance_alias=alias,
+                            username=username,
+                            password=password,
+                            mysql_path=path,
+                            port=port,
+                            high_availability=high_availability)
+                        dbins_obj.save()
+                        db_group_obj = models.DatabaseGroup.objects.get(id=group_id)
+                        db_group_obj.instance_number = db_group_obj.instance_number + 1
+                        db_group_obj.save()
+                        sftp_conn.close()
+                        ssh_conn.close()
+                        return HttpResponse(json.dumps({"status": status, "url": url}))
 
 
 @login_required
 def delete_server(request):
     server_id = request.POST.get("server_id")
-    print(server_id)
     server_obj = models.Server.objects.get(id=server_id)
     server_obj.delete()
     status = 1
