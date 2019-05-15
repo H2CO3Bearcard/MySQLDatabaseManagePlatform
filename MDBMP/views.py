@@ -15,6 +15,7 @@ from MDBMP.mysql.json_date import JsonExtendEncoder
 from MDBMP.mysql.mysql_conn import create_mysql_conn
 from MDBMP.mysql.mysql_package import get_mysql_package
 from MDBMP.mysql.install_mysql import send_package, install_mysql_ins
+from MDBMP.mysql.start_or_stop_mysql import start_mysql, stop_mysql
 # Create your views here.
 
 
@@ -299,6 +300,92 @@ def install_mysql(request):
                         sftp_conn.close()
                         ssh_conn.close()
                         return HttpResponse(json.dumps({"status": status, "url": url}))
+
+
+@login_required
+def start_mysql_ins(request):
+    server_id = request.POST.get("server_id")
+    port = request.POST.get("port")
+    server_obj = models.Server.objects.values('ip', 'user', 'password', 'ssh_port').get(id=server_id)
+    ip = server_obj['ip']
+    server_user = server_obj['user']
+    server_pwd = server_obj['password']
+    ssh_port = server_obj['ssh_port']
+    ssh_conn = link_server.ssh_conn_host(ip, ssh_port, server_user, server_pwd)
+    if ssh_conn == 1:
+        status = 1
+        err_msg = "SSH连接失败，请检查IP、用户名、密码是否错误"
+        return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+    elif ssh_conn == 2:
+        status = 2
+        err_msg = "SSH连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
+        return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+    else:
+        result = start_mysql(ssh_conn, port)
+        if result == 1:
+            status = 3
+            err_msg = "当前实例正在运行，无需重复启动"
+            return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+        elif result == 0:
+            status = 4
+            url = '/db_manage/'
+            db_ins_obj = models.DatabaseInstance.objects.get(server_id=server_id, port=port)
+            db_ins_obj.status = '运行'
+            db_ins_obj.save()
+            return HttpResponse(json.dumps({"status": status, "url": url}))
+        else:
+            status = 5
+            err_msg = result
+            return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+
+
+@login_required
+def stop_mysql_ins(request):
+    server_id = request.POST.get("server_id")
+    port = request.POST.get("port")
+    server_obj = models.Server.objects.values('ip', 'user', 'password', 'ssh_port').get(id=server_id)
+    ip = server_obj['ip']
+    server_user = server_obj['user']
+    server_pwd = server_obj['password']
+    ssh_port = server_obj['ssh_port']
+    ssh_conn = link_server.ssh_conn_host(ip, ssh_port, server_user, server_pwd)
+    if ssh_conn == 1:
+        status = 1
+        err_msg = "SSH连接失败，请检查IP、用户名、密码是否错误"
+        return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+    elif ssh_conn == 2:
+        status = 2
+        err_msg = "SSH连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
+        return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+    else:
+        result = stop_mysql(ssh_conn, port)
+        if result == 1:
+            status = 3
+            err_msg = "当前实例已停止运行，无需重复停止"
+            return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+        elif result == 0:
+            status = 4
+            url = '/db_manage/'
+            db_ins_obj = models.DatabaseInstance.objects.get(server_id=server_id, port=port)
+            db_ins_obj.status = '停止'
+            db_ins_obj.save()
+            return HttpResponse(json.dumps({"status": status, "url": url}))
+        else:
+            status = 5
+            err_msg = result
+            return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+
+
+@login_required
+def get_rman_path(request):
+    server_id = request.POST.get("server_id")
+    server_obj = models.Server.objects.values('rman_path', 'ip').filter(id=server_id)
+    rman_path = server_obj[0]['rman_path']
+    ip = server_obj[0]['ip']
+    if rman_path:
+        return HttpResponse(json.dumps({"status": 1}))
+    else:
+        return HttpResponse(json.dumps({"status": 0, "ip": ip}))
 
 
 @login_required

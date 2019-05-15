@@ -17,6 +17,44 @@ function loading1() {
 	$("p.loading-discription").css("font-size","18px");
 }
 
+function start_loading() {
+	$('body').loading({
+		loadingWidth:380,
+		title:'请稍后',
+		name:'start',
+		discription:'正在启动数据库实例',
+		direction:'column',
+		type:'origin',
+		// originBg:'#71EA71',
+		originDivWidth:60,
+		originDivHeight:60,
+		originWidth:8,
+		originHeight:8,
+		smallLoading:false,
+		loadingMaskBg:'rgba(0,0,0,0.2)'
+	});
+	$("p.loading-discription").css("font-size","18px");
+}
+
+function stop_loading() {
+	$('body').loading({
+		loadingWidth:380,
+		title:'请稍后',
+		name:'stop',
+		discription:'正在停止数据库实例',
+		direction:'column',
+		type:'origin',
+		// originBg:'#71EA71',
+		originDivWidth:60,
+		originDivHeight:60,
+		originWidth:8,
+		originHeight:8,
+		smallLoading:false,
+		loadingMaskBg:'rgba(0,0,0,0.2)'
+	});
+	$("p.loading-discription").css("font-size","18px");
+}
+
 function loading2() {
 	$('body').loading({
 		loadingWidth:240,

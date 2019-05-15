@@ -13,10 +13,15 @@
         }
     </style>
     <link rel="stylesheet" href="/static/css/loading.css">
+    <link rel="stylesheet" href="/static/css/plugins/ladda/ladda.min.css">
+    <link rel="stylesheet" href="/static/css/plugins/ladda/ladda-themeless.min.css">
     <script src="/static/public_js/db_manage.js"></script>
     <script src="/static/js/random.js"></script>
     <script src="/static/js/loading.js"></script>
     <script src="/static/js/loading-fun.js"></script>
+    <script src="/static/js/plugins/ladda/spin.min.js"></script>
+    <script src="/static/js/plugins/ladda/ladda.min.js"></script>
+    <script src="/static/js/plugins/ladda/ladda.jquery.min.js"></script>
 </head>
 
 <body>
@@ -150,6 +155,21 @@
                         <button id="btn-addDbIns" type="button" class="btn btn-primary btn-sm" data-toggle="modal"
                                 data-target="#addDbInstanceModal">添加数据库实例
                         </button>
+                        <div class="btn-group">
+                            <button id="btn-start-stop" data-toggle="dropdown" class="btn btn-primary btn-sm dropdown-toggle" aria-expanded="false">停止/启动 <span class="fa fa-angle-double-down"></span></button>
+                            <ul class="dropdown-menu" x-placement="bottom-start" style="position: absolute; top: 26px; left: 0px; will-change: top, left;">
+                                <li><a id="a1" class="dropdown-item">启动数据库</a></li>
+                                <li><a id="a2" class="dropdown-item">停止数据库</a></li>
+                            </ul>
+                        </div>
+                        <div class="btn-group">
+                            <button id="btn-del-logout" data-toggle="dropdown" class="btn btn-warning btn-sm dropdown-toggle" aria-expanded="false">注销/删除 <span class="fa fa-angle-double-down"></span></button>
+                            <ul class="dropdown-menu" x-placement="bottom-start" style="position: absolute; top: 26px; left: 0px; will-change: top, left;">
+                                <li><a id="a3" class="dropdown-item">注销数据库</a></li>
+                                <li><a id="a4" class="dropdown-item">彻底删除数据库</a></li>
+                            </ul>
+                        </div>
+                        <button id="btn-backup" type="button" class="btn btn-primary btn-sm">触发全备</button>
                     </div>
                 </div>
                 <div class="ibox-content">
@@ -241,6 +261,42 @@
                 </div>
             </div>
         </div>
+        <div class="modal fade" id="installBackupToolsModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">安装备份工具</h3>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">服务器IP</label>
+                                <div class="col-lg-8"><input id="serverIp" disabled="disabled" type="text"
+                                                             class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">安装绝对路径</label>
+                                <div class="col-lg-8"><input id="rmanPath" type="text" placeholder="请输入备份工具安装路径"
+                                                             class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group row"><label class="col-lg-3 col-form-label">备份工具</label>
+                                <div class="col-lg-8"><input  type="text" disabled="disabled"
+                                                             value="Percona XtraBackup 2.4.14" class="form-control">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button id="btnInstallRmanCancel" type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                                <button id="btnInstallRmanSubmit" class="ladda-button btn btn-primary" data-style="zoom-out"><span
+                                        class="ladda-label">安装</span><span class="ladda-spinner"></span>
+                                    <div class="ladda-progress" style="width: 0px;"></div>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <script>
@@ -255,10 +311,31 @@
             paginationLoop: false,
             pageNumber: 1, //初始化加载第一页
             sidePagination: 'client',//server:服务器端分页|client：前端分页
-            pageSize: 5,//单页记录数
-            pageList: [2, 5, 10],//可选择单页记录数
+            pageSize: 4,//单页记录数
             showRefresh: false,//刷新按钮
+            //pageList: [5, 10, 15],//可选择单页记录数
             search: false,//搜索框
+            onClickRow: function(row, $element){
+                var server_id = row.server_id;
+                var port = row.port;
+                var group_id = row.group_id;
+                if ($($element).is('.table-tr')) {
+                    $($element).parent().children().removeClass("table-tr");
+                    $("#btn-start-stop").prop('disabled', true);
+                    $("#btn-del-logout").prop('disabled', true);
+                    $("#btn-backup").prop('disabled', true);
+                    $("#a1,#a2,#btn-backup").attr("data-server-id","");
+                    $("#a1,#a2,#btn-backup").attr("data-port","0");
+                }else{
+                    $($element).parent().children().removeClass("table-tr");
+                    $($element).addClass("table-tr");
+                    $("#btn-start-stop").prop('disabled', false);
+                    $("#btn-del-logout").prop('disabled', false);
+                    $("#btn-backup").prop('disabled', false);
+                    $("#a1,#a2,#btn-backup").attr("data-server-id",server_id);
+                    $("#a1,#a2,#btn-backup").attr("data-port",port);
+                }
+            },
             columns: [{
                 field: 'group_name',
                 title: '数据库组名'
@@ -280,13 +357,33 @@
             }, {
                 field: 'mysql_path',
                 title: '安装路径'
+            }, {
+                title: '运行状态',
+                formatter:function (value, row) {
+                    var status = row.status;
+                    if (status === '运行'){
+                        return '<span class="label label-primary">'+status+'</span>'
+                    }else {
+                        return '<span class="label label-danger">'+status+'</span>'
+                    }
+                }
             }]
         });
     }
-    //bootstrap table 生成数据库实例表格结束
+    //bootstrap table 生成数据库实例表格结束'
+    //页面初始化数据库实例表开始
     get_db_instance(0);
+    $("#a1,#a2").attr("data-group-id","0");
+    //页面初始化数据库实例表结束
+    //页面初始化禁用删除数据库组按钮
     $("#b1").prop("disabled", true);
+    //页面初始化时禁用启动停止MySQL按钮
+    $("#btn-start-stop").prop('disabled', true);
+    $("#btn-del-logout").prop('disabled', true);
+    $("#btn-backup").prop('disabled', true);
+    //页面初始化时禁用添加数据库实例按钮
     $("#btn-addDbIns").prop("disabled", true);
+    //页面初始化数据库组表开始
     $('#dbGroupTable').bootstrapTable({
         url: '/get_db_group/',
         method: 'POST',
@@ -311,7 +408,8 @@
                 $("#b1").val("");
                 $("#i6").val("");
                 $("#b1").prop("disabled", true);
-                $("#btn-addDbIns").prop("disabled", true)
+                $("#btn-addDbIns").prop("disabled", true);
+                $("#a1,#a2").attr("data-group-id","0");
             } else {
                 $($element).parent().children().removeClass("table-tr");
                 $($element).addClass("table-tr");
@@ -321,6 +419,7 @@
                 $("#b1").prop("disabled", false);
                 $("#i5").val(group_name);
                 $("#i5").attr("group_id",group_id);
+                $("#a1,#a2").attr("data-group-id",group_id);
                 $("#btn-addDbIns").prop("disabled", false);
                 if (instance_number !== 0){
                     $("button[data-id='s3']").prop("disabled", false)
@@ -351,6 +450,8 @@
             width: '20%'
         }]
     });
+    //页面初始化数据库组表结束
+    //删除数据库组按钮点击事件
     $("#b1").on('click', function () {
         var group_id = $(this).val();
         console.log(group_id);
@@ -403,6 +504,9 @@
             }
         );
     });
+    $("#btnInstallRmanCancel").on('click', function () {
+        $("#rmanPath").val('')
+    });
     // 清除模态框input标签内容结束
     $("#b4").on('click', function () {
         var group_name = $("#i1").val();
@@ -453,6 +557,7 @@
         $("#i8").val(ip+":"+port)
     });
     //填充别名结束
+    //添加数据库实例按钮点击事件
     $("#b6").on('click', function () {
         var group_id = $("#i5").attr("group_id");
         var server_id = $("#s1").val();
@@ -516,6 +621,90 @@
                 }
             })
         }
+    });
+    //启动数据库实例点击事件
+    $("#a1").on('click', function () {
+        var $this = $(this);
+        var server_id = $this.attr("data-server-id");
+        var port = $this.attr("data-port");
+        var group_id = $this.attr("data-group-id");
+        start_loading();
+        $.ajax({
+            url:'/start_mysql_ins/',
+            type: 'POST',
+            dataType: 'JSON',
+            data: {
+                "server_id": server_id,
+                "port": port
+            },
+            success: function (data) {
+                if(data['status']===1||data['status']===2||data['status']===3||data['status']===5){
+                    removeLoading('start');
+                    layer.msg(data["err_msg"], {time: 2000, icon: 2});
+                }else {
+                    removeLoading('start');
+                    layer.msg("实例启动成功", {time: 2000, icon: 6});
+                    get_db_instance(group_id)
+                }
+            }
+        })
+    });
+    //停止数据库实例点击事件
+    $("#a2").on('click', function () {
+        var $this = $(this);
+        var server_id = $this.attr("data-server-id");
+        var port = $this.attr("data-port");
+        var group_id = $this.attr("data-group-id");
+        stop_loading();
+        $.ajax({
+            url:'/stop_mysql_ins/',
+            type: 'POST',
+            dataType: 'JSON',
+            data: {
+                "server_id": server_id,
+                "port": port
+            },
+            success: function (data) {
+                if(data['status']===1||data['status']===2||data['status']===3||data['status']===5){
+                    removeLoading('stop');
+                    layer.msg(data["err_msg"], {time: 2000, icon: 2});
+                }else {
+                    removeLoading('stop');
+                    layer.msg("实例停止成功", {time: 2000, icon: 6});
+                    get_db_instance(group_id);
+                    $("#btn-start-stop").prop('disabled', true);
+                }
+            }
+        })
+    });
+    $("#btn-backup").on('click', function () {
+        var $this = $(this);
+        var server_id = $this.attr("data-server-id");
+        var port = $this.attr("data-port");
+        $.ajax({
+            url: '/get_rman_path/',
+            dataType: 'JSON',
+            type: 'POST',
+            data: {
+                "server_id": server_id
+            },
+            success: function (data) {
+                if(data['status']===0){
+                        $("#serverIp").val(data['ip']);
+                        layer.msg('当前机器上未安装备份工具，请先安装',{time:3000, icon:3});
+                        setTimeout(function () {
+                            $("#installBackupToolsModal").modal('show')
+                        },3000);
+                }
+            }
+        })
+    });
+    $("#btnInstallRmanSubmit").on('click', function () {
+        var l = $("#btnInstallRmanSubmit").ladda();
+        l.ladda("start");
+        setTimeout(function () {
+            l.ladda("stop");
+        },5000)
     })
 </script>
 <script src="/static/twofour.js"></script>

@@ -1,9 +1,6 @@
 import random
 import time
 import traceback
-import logging
-
-logger = logging.getLogger('scripts')
 
 
 def send_file(sftp_conn, ssh_conn, file_name):
@@ -16,7 +13,6 @@ def send_file(sftp_conn, ssh_conn, file_name):
     result = stdout.read().decode(encoding="UTF-8")
     if result:
         print("文件存在，传输结束")
-        logger.info("文件存在，传输结束")
         return 1
     else:
         # 不存在就传输文件
@@ -221,7 +217,7 @@ def install_mysql_ins(ssh_conn, mysql_package, mysql_port, mysql_dir, mysql_user
         mysql_tmp = mysql_dir + "/tmp/" + str(mysql_port)
         mysql_backup = mysql_dir + "/backup/" + str(mysql_port)
         mysql_cnf = mysql_dir + "/etc/" + str(mysql_port)
-        mysql_socket = mysql_data + "/mysqld.socket"
+        mysql_socket = mysql_data + "/mysqld.sock"
         mysql_pid = mysql_data + "/mysqld.pid"
         install_mysql_lock_file = mysql_dir + "/base/" + mysql_version + '/INSTALL_MYSQL_LOCK'
         privilege_user = pri_user

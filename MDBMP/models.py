@@ -32,6 +32,7 @@ class Server(models.Model):
     ssh_port = models.IntegerField(null=False, unique=False, default=22)
     cpu_number = models.IntegerField()
     mem_total = models.CharField(max_length=50)
+    rman_path = models.CharField(null=True, max_length=50)
 
 
 class DatabaseGroup(models.Model):
@@ -55,4 +56,5 @@ class DatabaseInstance(models.Model):
     mysql_path = models.CharField(null=False, unique=False, max_length=50)
     port = models.IntegerField(null=False)
     high_availability = models.CharField(null=False, max_length=25)
+    status = models.CharField(null=False, max_length=25)
 

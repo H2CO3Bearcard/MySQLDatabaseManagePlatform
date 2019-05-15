@@ -17,7 +17,7 @@ var a_idx = 0;
                 "left": x,
                 "position": "absolute",
                 "font-weight": "bold",
-                "color": "#f00"
+                "color": '#f00'
             });
             $("body").append($i);
             $i.animate({

@@ -1,4 +1,5 @@
 from MDBMP.server.link_server import ssh_conn_host
+import time
 
 
 def start_mysql(ssh_conn, port):
@@ -30,6 +31,7 @@ def stop_mysql(ssh_conn, port):
         print(sout)
         stdin1, stdout1, stderr1 = ssh_conn.exec_command(
             '''systemctl stop mysqld_{}'''.format(port))
+        time.sleep(1)
         stdin, stdout, stderr = ssh_conn.exec_command(
             '''netstat -nltp|grep 'LISTEN' |grep 'mysqld' | grep {}'''.format(port))
         sout = stdout.read().decode(encoding="UTF-8")
@@ -45,6 +47,6 @@ def stop_mysql(ssh_conn, port):
 if __name__ == '__main__':
     ssh_conn = ssh_conn_host('192.168.1.3', 22, 'root', '123456')
     print(ssh_conn)
-    # result = start_mysql(ssh_conn, 3306)
-    result = stop_mysql(ssh_conn, 3306)
+    result = start_mysql(ssh_conn, 3306)
+    # result = stop_mysql(ssh_conn, 3306)
     print(result)
