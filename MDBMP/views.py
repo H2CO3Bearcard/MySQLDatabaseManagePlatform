@@ -17,6 +17,7 @@ from MDBMP.mysql.mysql_package import get_mysql_package
 from MDBMP.mysql.install_mysql import send_package, install_mysql_ins
 from MDBMP.mysql.start_or_stop_mysql import start_mysql, stop_mysql
 from MDBMP.mysql import backup
+from MDBMP.decorator.PermissionToCheck import permission_check
 # Create your views here.
 
 
@@ -50,6 +51,7 @@ def logout(request):
 
 
 @login_required
+@permission_check(1)
 def index(request):
     menus_obj, menu_grouop_obj = select_sidebar(request)
     identity = admin_yes_or_no(request)
@@ -64,6 +66,7 @@ def index(request):
 
 
 @login_required
+@permission_check(3)
 def server_manage(request):
     menus_obj, menu_grouop_obj = select_sidebar(request)
     identity = admin_yes_or_no(request)
@@ -78,6 +81,7 @@ def server_manage(request):
 
 
 @login_required
+@permission_check(3)
 def add_server(request):
     ip = request.POST.get("ip")
     port = request.POST.get("port")
@@ -117,6 +121,7 @@ def add_server(request):
 
 
 @login_required
+@permission_check(3)
 def delete_server(request):
     server_id = request.POST.get("server_id")
     db_ins_obj = models.DatabaseInstance.objects.filter(server_id=server_id)
@@ -131,8 +136,8 @@ def delete_server(request):
         return HttpResponse(json.dumps({"status": status}))
 
 
-
 @login_required
+@permission_check(4)
 def db_manage(request):
     menus_obj, menu_grouop_obj = select_sidebar(request)
     server_obj = models.Server.objects.values('id', 'ip', 'hostname')
@@ -150,6 +155,7 @@ def db_manage(request):
 
 
 @login_required
+@permission_check(4)
 def get_db_group(request):
     db, cur = create_mysql_conn()
     sql = "select * from MDBMP_databasegroup"
@@ -161,6 +167,7 @@ def get_db_group(request):
 
 
 @login_required
+@permission_check(4)
 def add_db_group(request):
     group_name = request.POST.get("group_name")
     use = request.POST.get("use")
@@ -182,6 +189,7 @@ def add_db_group(request):
 
 
 @login_required
+@permission_check(4)
 def delete_db_group(request):
     group_id = request.POST.get("group_id")
     db, cur = create_mysql_conn()
@@ -205,6 +213,7 @@ def delete_db_group(request):
 
 
 @login_required
+@permission_check(4)
 def get_db_instance(request):
     db, cur = create_mysql_conn()
     group_id = request.GET.get("group_id", None)
@@ -225,6 +234,7 @@ def get_db_instance(request):
 
 
 @login_required
+@permission_check(4)
 def install_mysql(request):
     group_id = request.POST.get("group_id")
     server_id = request.POST.get("server_id")
@@ -304,6 +314,7 @@ def install_mysql(request):
 
 
 @login_required
+@permission_check(4)
 def start_mysql_ins(request):
     server_id = request.POST.get("server_id")
     port = request.POST.get("port")
@@ -341,6 +352,7 @@ def start_mysql_ins(request):
 
 
 @login_required
+@permission_check(4)
 def stop_mysql_ins(request):
     server_id = request.POST.get("server_id")
     port = request.POST.get("port")
@@ -378,6 +390,7 @@ def stop_mysql_ins(request):
 
 
 @login_required
+@permission_check(4)
 def get_rman_path(request):
     server_id = request.POST.get("server_id")
     server_obj = models.Server.objects.values('rman_path', 'ip').filter(id=server_id)
@@ -390,6 +403,7 @@ def get_rman_path(request):
 
 
 @login_required
+@permission_check(4)
 def install_rman(request):
     server_id = request.POST.get("server_id")
     rman_path = request.POST.get("rman_path")
@@ -430,6 +444,7 @@ def install_rman(request):
 
 
 @login_required
+@permission_check(8)
 def user_manage(request):
     user_obj_all = User.objects.all()
     usermenu_obj_all = models.UserMenus.objects.all()
@@ -448,6 +463,7 @@ def user_manage(request):
 
 
 @login_required
+@permission_check(8)
 def create_user(request):
     if request.method == 'POST':
         get_user = request.POST.get("user")
@@ -470,6 +486,7 @@ def create_user(request):
 
 
 @login_required
+@permission_check(8)
 def edit_user(request):
     if request.method == 'POST':
         get_password = request.POST.get("password")
@@ -497,6 +514,7 @@ def edit_user(request):
 
 
 @login_required
+@permission_check(8)
 def delete_user(request):
     if request.method == "POST":
         get_user = request.POST.get("user")
@@ -515,6 +533,7 @@ def delete_user(request):
 
 
 @login_required
+@permission_check(9)
 def permission(request):
     user_obj_all = User.objects.all()
     usermenu_obj_all = models.UserMenus.objects.all()
@@ -533,6 +552,7 @@ def permission(request):
 
 
 @login_required
+@permission_check(9)
 def get_permission(request):
     user_id = request.POST.get("user_id")
     menu_id_list = []
@@ -545,6 +565,7 @@ def get_permission(request):
 
 
 @login_required
+@permission_check(9)
 def edit_permission(request):
     menu_id_list = request.POST.getlist("menus_list")
     user_id = request.POST.get("user_id")
@@ -568,6 +589,7 @@ def edit_permission(request):
 
 
 @login_required
+@permission_check(2)
 def db_monitor(request):
     menus_obj, menu_grouop_obj = select_sidebar(request)
     identity = admin_yes_or_no(request)
@@ -579,5 +601,11 @@ def db_monitor(request):
          "identity": identity})
 
 
+@login_required
+def no_permission(request):
+    return render(request, 'nopermission.html')
+
+
+@login_required
 def err(request):
     return render(request, '404.html')

@@ -44,6 +44,7 @@ urlpatterns = [
     url(r'^get_permission/', views.get_permission),
     url(r'^edit_permission/', views.edit_permission),
     url(r'^db_monitor/', views.db_monitor),
+    url(r'^no_permission/', views.no_permission),
     url(r'^.*/', views.err),
     url(r'^$', views.login),
 ]
