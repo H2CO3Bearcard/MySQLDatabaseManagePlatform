@@ -41,6 +41,7 @@ urlpatterns = [
     url(r'^stop_mysql_ins/', views.stop_mysql_ins),
     url(r'^get_rman_path/', views.get_rman_path),
     url(r'^install_rman/', views.install_rman),
+    url(r'^ins_backup/', views.ins_backup),
     url(r'^get_permission/', views.get_permission),
     url(r'^edit_permission/', views.edit_permission),
     url(r'^db_monitor/', views.db_monitor),

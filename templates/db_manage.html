@@ -231,7 +231,7 @@
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">MySQL用户</label>
                                 <div class="col-lg-9"><input id="i9" type="text" class="form-control"
-                                                             placeholder="请输入需要创建的MySQL超级用户名" value="root">
+                                                             disabled="disabled" placeholder="请输入需要创建的MySQL超级用户名" value="root">
                                 </div>
                             </div>
                             <div class="form-group row"><label class="col-lg-3 col-form-label">MySQL密码</label>
@@ -323,7 +323,7 @@
                             </div>
                             <div class="modal-footer">
                                 <button id="btnBackupCancel" type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
-                                <button id="btnBackupSubmit" class="ladda-button btn btn-primary" data-style="zoom-out"><span
+                                <button id="btnBackupSubmit" type="button" class="ladda-button btn btn-primary" data-style="zoom-out"><span
                                         class="ladda-label">备份</span><span class="ladda-spinner"></span>
                                     <div class="ladda-progress" style="width: 0px;"></div>
                                 </button>
@@ -393,6 +393,9 @@
                 field: 'high_availability',
                 title: '高可用方式'
             }, {
+                field: 'role',
+                title: '角色'
+            }, {
                 field: 'mysql_path',
                 title: '安装路径'
             }, {
@@ -461,9 +464,11 @@
                 $("#btn-addDbIns").prop("disabled", false);
                 $("#btn-start-stop,#btn-del-logout,#btn-backup").prop("disabled", true);
                 if (instance_number !== 0){
-                    $("button[data-id='s3']").prop("disabled", false)
+                    $("button[data-id='s3']").prop("disabled", false);
+                    $("#i10").prop('disabled', true)
                 }else {
                     $("button[data-id='s3']").prop("disabled", true);
+                    $("#i10").prop('disabled', false)
                 }
             }
         },
@@ -774,10 +779,25 @@
                 }
             })
         }
-    })
-    $("#btnBackupSubmit").on('click', function f() {
-        alert(1)
-    })
+    });
+    $("#btnBackupSubmit").on('click', function () {
+        var server_ip = $("#serverName").val();
+        var ins_id = $("#insId").val();
+        $.ajax({
+            url: '/ins_backup/',
+            dataType: 'JSON',
+            type: 'POST',
+            data: {
+                "server_ip": server_ip,
+                "ins_id": ins_id
+            },
+            success: function (data) {
+                if(data['status']===1){
+                    layer.msg('备份成功',{time:2000,icon:6});
+                }
+            }
+        })
+    });
 </script>
 <script src="/static/twofour.js"></script>
 </body>

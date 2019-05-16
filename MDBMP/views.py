@@ -247,8 +247,16 @@ def install_mysql(request):
     password = request.POST.get("password")
     high_availability = request.POST.get("high_availability")
     path = request.POST.get("path")
+    ins_number = models.DatabaseInstance.objects.filter(group_id=group_id).count()
+    if ins_number == 0:
+        role = '主实例'
+    else:
+        role = '从实例'
+
     if backup_name:
-        pass
+        ins_obj = models.DatabaseInstance.objects.values('password', 'mysql_version').get(group_id=group_id, role='主实例')
+        password = ins_obj['password']
+        pack_name = 'mysql-{}-linux-glibc2.12-x86_64.tar.gz'.format(ins_obj['mysql_version'])
     else:
         server_obj = models.Server.objects.values('ip', 'user', 'password', 'ssh_port').get(id=server_id)
         ip = server_obj['ip']
@@ -303,7 +311,9 @@ def install_mysql(request):
                             password=password,
                             mysql_path=path,
                             port=port,
-                            high_availability=high_availability)
+                            high_availability=high_availability,
+                            status='运行',
+                            role=role)
                         dbins_obj.save()
                         db_group_obj = models.DatabaseGroup.objects.get(id=group_id)
                         db_group_obj.instance_number = db_group_obj.instance_number + 1
@@ -441,6 +451,16 @@ def install_rman(request):
             server_obj.rman_path = rman_path
             server_obj.save()
             return HttpResponse(json.dumps({'status': 5}))
+
+
+@login_required
+@permission_check(4)
+def ins_backup(request):
+    server_ip = request.POST.get("server_ip")
+    ins_id = request.POST.get("ins_id")
+    print(server_ip)
+    print(ins_id)
+    return HttpResponse(json.dumps({"status": 1}))
 
 
 @login_required

@@ -68,7 +68,9 @@ class ModifyMysqlCnf(object):
         cnf_dir = self.cnf_dir + "/my.cnf"
         stdin, stdout, stderr = self.ssh_conn.exec_command("egrep -iw {} {}".format(var_option, cnf_dir))
         potion = stdout.read().decode(encoding='UTF-8').strip("\n")
+        time.sleep(0.2)
         stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{};{} = {};' {}'''.format(potion, var_option, var_values, cnf_dir))
+        time.sleep(0.3)
 
     def modify_systemd(self, privilege_user, privilege_group, mysql_pid, mysql_base, mysql_cnf, mysql_socket, mysql_port):
         privilege_user = privilege_user
@@ -80,14 +82,21 @@ class ModifyMysqlCnf(object):
         mysql_port = mysql_port
         systemd_file = '/etc/systemd/system/mysqld_{}.service'.format(mysql_port)
 
-        stdin,stdout,stderr = self.ssh_conn.exec_command('''mv {} {}'''.format("/tmp/mysql_5_7.systemd", systemd_file))
-        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's/{{.RunUser}}/{}/g' {}'''.format(privilege_user, systemd_file))
-        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's/{{.RunGroup}}/{}/g' {}'''.format(privilege_group, systemd_file))
-        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.PidPath}};{};g' {}'''.format(mysql_pid, systemd_file))
-        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.BaseDir}};{};g' {}'''.format(mysql_base, systemd_file))
-        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.Mycnf}};{};g' {}'''.format(mysql_cnf+"/my.cnf", systemd_file))
-        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.SocketPath}};{};g' {}'''.format(mysql_socket, systemd_file))
-        stdin,stdout,stderr = self.ssh_conn.exec_command('''sed -i 's;{{.Port}};{};g' {}'''.format(mysql_port, systemd_file))
+        self.ssh_conn.exec_command('''mv {} {}'''.format("/tmp/mysql_5_7.systemd", systemd_file))
+        time.sleep(0.3)
+        self.ssh_conn.exec_command('''sed -i 's/{{.RunUser}}/{}/g' {}'''.format(privilege_user, systemd_file))
+        time.sleep(0.3)
+        self.ssh_conn.exec_command('''sed -i 's/{{.RunGroup}}/{}/g' {}'''.format(privilege_group, systemd_file))
+        time.sleep(0.3)
+        self.ssh_conn.exec_command('''sed -i 's;{{.PidPath}};{};g' {}'''.format(mysql_pid, systemd_file))
+        time.sleep(0.3)
+        self.ssh_conn.exec_command('''sed -i 's;{{.BaseDir}};{};g' {}'''.format(mysql_base, systemd_file))
+        time.sleep(0.3)
+        self.ssh_conn.exec_command('''sed -i 's;{{.Mycnf}};{};g' {}'''.format(mysql_cnf+"/my.cnf", systemd_file))
+        time.sleep(0.3)
+        self.ssh_conn.exec_command('''sed -i 's;{{.SocketPath}};{};g' {}'''.format(mysql_socket, systemd_file))
+        time.sleep(0.3)
+        self.ssh_conn.exec_command('''sed -i 's;{{.Port}};{};g' {}'''.format(mysql_port, systemd_file))
 
     def empowerment(self, dir_name, pri_user, pri_group):
         dir_name = dir_name

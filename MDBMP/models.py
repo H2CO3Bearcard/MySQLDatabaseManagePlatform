@@ -56,5 +56,6 @@ class DatabaseInstance(models.Model):
     mysql_path = models.CharField(null=False, unique=False, max_length=50)
     port = models.IntegerField(null=False)
     high_availability = models.CharField(null=False, max_length=25)
+    role = models.CharField(null=False, max_length=25)
     status = models.CharField(null=False, max_length=25)
 
