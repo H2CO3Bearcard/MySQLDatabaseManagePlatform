@@ -65,7 +65,12 @@
                     }
                 }
             })
-        })
+        });
+        $("body").keydown(function() {
+            if (event.keyCode == "13") {
+            $('#b1').click();
+            }
+        }); 
 </script>
 </body>
 

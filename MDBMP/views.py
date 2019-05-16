@@ -16,6 +16,7 @@ from MDBMP.mysql.mysql_conn import create_mysql_conn
 from MDBMP.mysql.mysql_package import get_mysql_package
 from MDBMP.mysql.install_mysql import send_package, install_mysql_ins
 from MDBMP.mysql.start_or_stop_mysql import start_mysql, stop_mysql
+from MDBMP.mysql import backup
 # Create your views here.
 
 
@@ -383,9 +384,49 @@ def get_rman_path(request):
     rman_path = server_obj[0]['rman_path']
     ip = server_obj[0]['ip']
     if rman_path:
-        return HttpResponse(json.dumps({"status": 1}))
+        return HttpResponse(json.dumps({"status": 1, "ip": ip}))
     else:
         return HttpResponse(json.dumps({"status": 0, "ip": ip}))
+
+
+@login_required
+def install_rman(request):
+    server_id = request.POST.get("server_id")
+    rman_path = request.POST.get("rman_path")
+    server_obj = models.Server.objects.values('ip', 'user', 'password', 'ssh_port').get(id=server_id)
+    ip = server_obj['ip']
+    server_user = server_obj['user']
+    server_pwd = server_obj['password']
+    ssh_port = server_obj['ssh_port']
+    print(server_id)
+    print(rman_path)
+    ssh_conn = link_server.ssh_conn_host(ip, ssh_port, server_user, server_pwd)
+    if ssh_conn == 1:
+        status = 1
+        err_msg = "SSH连接失败，请检查IP、用户名、密码是否错误"
+        return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+    elif ssh_conn == 2:
+        status = 2
+        err_msg = "SSH连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
+        return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+    else:
+        sftp_conn = link_server.sftp_conn_host(ip, ssh_port, server_user, server_pwd)
+        if sftp_conn == 1:
+            status = 3
+            err_msg = "SFTP连接失败，请检查IP、用户名、密码是否错误"
+            return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+        elif sftp_conn == 2:
+            status = 4
+            err_msg = "SFTP连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
+            return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+        else:
+            backup.upload_rman_tools(sftp_conn)
+            backup.mkdir_rman(ssh_conn, rman_path)
+            backup.unpack_package(ssh_conn, rman_path)
+            server_obj = models.Server.objects.get(id=server_id)
+            server_obj.rman_path = rman_path
+            server_obj.save()
+            return HttpResponse(json.dumps({'status': 5}))
 
 
 @login_required
