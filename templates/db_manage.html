@@ -470,6 +470,21 @@
                     $("button[data-id='s3']").prop("disabled", true);
                     $("#i10").prop('disabled', false)
                 }
+                $("#s3").empty();
+                $.ajax({
+                    url: '/get_backup/',
+                    dataType: 'JSON',
+                    type: 'POST',
+                    data: {
+                        "group_id": group_id
+                    },
+                    success: function (data) {
+                        for(i in data){
+                            $("#s3").append("<option value="+data[i].backup_folder_name+">"+data[i].backup_folder_name+"</option>")
+                        }
+                        $("#s3").selectpicker('refresh');
+                    }
+                })
             }
         },
         columns: [{
@@ -637,13 +652,16 @@
         }else if(!username){
             layer.msg('MySQL超级用户不能为空', {time: 2000, icon: 2});
             return false;
-        }else if(!password){
+        }else if(!password && ! $("#i10").prop('disabled')){
             layer.msg('MySQL超级用户的密码为空', {time: 2000, icon: 2});
             return false;
         }else if(!path){
             layer.msg('安装的绝对路径不能为空', {time: 2000, icon: 2});
             return false;
-        } else {
+        }else if(! backup_name && ! $("[data-id='s3']").prop('disabled')){
+            layer.msg("第二个实例必须选择备份集",{time:2000, icon:5});
+            return false;
+        }else {
             loading1();
             $("#addDbInstanceModal").modal("hide");
             $.ajax({
@@ -709,7 +727,7 @@
                 "port": port
             },
             success: function (data) {
-                if(data['status']===1||data['status']===2||data['status']===3||data['status']===5){
+                if(data['status']===1||data['status']===2||data['status']===3||data['status']===5||data['status']===6){
                     removeLoading('stop');
                     layer.msg(data["err_msg"], {time: 2000, icon: 2});
                 }else {
@@ -724,7 +742,6 @@
     $("#btn-backup").on('click', function () {
         var $this = $(this);
         var server_id = $this.attr("data-server-id");
-        var port = $this.attr("data-port");
         $.ajax({
             url: '/get_rman_path/',
             dataType: 'JSON',
@@ -751,12 +768,13 @@
         var l = $("#btnInstallRmanSubmit").ladda();
         var server_id = $("#btn-backup").attr('data-server-id');
         var rman_path = $("#rmanPath").val();
+        var backup_name = $("#s3").val();
         console.log(server_id);
         console.log(rman_path);
         if(! rman_path){
             layer.msg("安装路径不能为空",{time:2000, icon:5});
             return false;
-        }else {
+        }else{
             l.ladda("start");
             $.ajax({
                 url: '/install_rman/',
@@ -781,22 +799,111 @@
         }
     });
     $("#btnBackupSubmit").on('click', function () {
+        var ll = $("#btnBackupSubmit").ladda();
         var server_ip = $("#serverName").val();
         var ins_id = $("#insId").val();
+        var server_id = $("#btn-backup").attr("data-server-id");
+        ll.ladda('start');
         $.ajax({
             url: '/ins_backup/',
             dataType: 'JSON',
             type: 'POST',
             data: {
                 "server_ip": server_ip,
-                "ins_id": ins_id
+                "ins_id": ins_id,
+                "server_id": server_id
             },
             success: function (data) {
-                if(data['status']===1){
+                if(data['status']===1||data['status']===2||data['status']===3){
+                    ll.ladda('stop');
+                    layer.msg(data['err_msg'],{time:2000,icon:5});
+                }else if(data['status']===4){
+                    ll.ladda('stop');
+                    $("#BackupModal").modal('hide');
                     layer.msg('备份成功',{time:2000,icon:6});
                 }
             }
         })
+    });
+    $("#a3").on('click', function () {
+        var server_id = $("#a1").attr("data-server-id");
+        var port = $("#a1").attr("data-port");
+        var group_id = $("#a1").attr("data-group-id");
+        swal({
+                title: "你确定？",
+                text: "你将从平台中删除这个数据库实例，但数据不会丢失",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "注销",
+                cancelButtonText: "取消",
+                closeOnConfirm: false,
+                closeOnCancel: false
+            },
+            function (isConfirm) {
+                if (isConfirm) {
+                    $.ajax({
+                        url: "/write_off_ins/",
+                        dataType: "json",
+                        type: 'POST',
+                        data: {
+                            "server_id": server_id,
+                            "port": port
+                        },
+                        success: function (data) {
+                            if (data["status"] === 1) {
+                                swal("成功", "数据库实例已注销:)", "success");
+                                $('#dbGroupTable').bootstrapTable('refresh');
+                                get_db_instance(group_id)
+                            }
+                        }
+                    })
+                } else {
+                    swal("取消", "这个数据库实例是安全的:)", "error");
+                }
+            });
+    });
+    $("#a4").on('click', function () {
+        var server_id = $("#a1").attr("data-server-id");
+        var port = $("#a1").attr("data-port");
+        var group_id = $("#a1").attr("data-group-id");
+        console.log(server_id);
+        console.log(port);
+        swal({
+                title: "你确定？",
+                text: "你将从平台中彻底删除这个数据库实例，数据不会保留",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "删除",
+                cancelButtonText: "取消",
+                closeOnConfirm: false,
+                closeOnCancel: false
+            },
+            function (isConfirm) {
+                if (isConfirm) {
+                    $.ajax({
+                        url: "/delete_ins/",
+                        dataType: "json",
+                        type: 'POST',
+                        data: {
+                            "server_id": server_id,
+                            "port": port
+                        },
+                        success: function (data) {
+                            if (data["status"] === 1||data["status"] === 2) {
+                                swal("失败", data["err_msg"], "error");
+                            } else if (data["status"] === 3) {
+                                swal("成功", "数据库实例删除成功:)", "success");
+                                $('#dbGroupTable').bootstrapTable('refresh');
+                                get_db_instance(group_id)
+                            }
+                        }
+                    })
+                } else {
+                    swal("取消", "这个数据库组是安全的:)", "error");
+                }
+            });
     });
 </script>
 <script src="/static/twofour.js"></script>

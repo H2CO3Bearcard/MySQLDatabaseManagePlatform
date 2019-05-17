@@ -163,13 +163,9 @@ class ModifyMysqlCnf(object):
         mysql_socket = mysql_socket
         cmd = "{}/bin/mysqld --defaults-file={} --initialize-insecure --user={}".format(mysql_base, mysql_cnf, pri_user)
         cmd2 = '''ps -ef |grep "{}" |grep -v grep'''.format(cmd)
-        k, c, v = self.ssh_conn.exec_command(cmd)
-        cc = c.read().decode(encoding='UTF-8')
-        print(cc)
+        self.ssh_conn.exec_command(cmd)
         stdin, stdout, stderr = self.ssh_conn.exec_command(cmd2)
         out = stdout.read().decode(encoding='UTF-8')
-        err = stderr.read().decode(encoding='UTF-8')
-        print(err, out)
         while True:
             if out:
                 time.sleep(5)
@@ -189,14 +185,10 @@ class ModifyMysqlCnf(object):
                         stdin, stdout, stderr = self.ssh_conn.exec_command(cmd4)
                         out = stdout.read().decode(encoding='UTF-8')
                     else:
-                        cmd5 = '''flush privileges;set password for root@localhost = \\"{}\\";flush privileges'''.format(password)
+                        cmd7 = '''grant all on *.* to root@'%' identified by '{}' with grant option;'''.format(password)
+                        cmd5 = '''flush privileges;set password for root@localhost = \\"{}\\";{};flush privileges'''.format(password, cmd7)
                         cmd6 = '''{}/bin/mysql -u{} -S {} -e "{}"'''.format(mysql_base, user, mysql_socket, cmd5)
-                        print(cmd6)
-                        c, v, k = self.ssh_conn.exec_command(cmd6)
-                        vv = v.read().decode(encoding='UTF-8')
-                        kk = k.read().decode(encoding='UTF-8')
-                        print(vv)
-                        print(kk)
+                        self.ssh_conn.exec_command(cmd6)
                         return 0
 
 
@@ -233,7 +225,6 @@ def install_mysql_ins(ssh_conn, mysql_package, mysql_port, mysql_dir, mysql_user
         privilege_group = pri_group
         mysql_user = mysql_user
         mysql_password = mysql_password
-
         modifly = ModifyMysqlCnf(ssh_conn, mysql_cnf)
         modifly.create_user('mysql', 'mysql')
         if modifly.judge_dir(mysql_dir) == 1:

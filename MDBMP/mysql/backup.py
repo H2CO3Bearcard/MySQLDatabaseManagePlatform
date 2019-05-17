@@ -6,6 +6,7 @@ def upload_rman_tools(sftp_conn):
     local_path = "./MDBMP/mysql_related/rman/rman-backup-tools.tar.gz"
     server_path = "/tmp/rman-backup-tools.tar.gz"
     sftp_conn.put(local_path, server_path)
+    sftp_conn.close()
     return 0
 
 
@@ -13,11 +14,14 @@ def mkdir_rman(ssh_conn, rman_path):
     ssh_conn = ssh_conn
     rman_path = rman_path
     if rman_path[-1] == "/":
-        rman_path = rman_path + "rman"
+        rman_path = rman_path + "rman/tmp"
+        rman_log_path = rman_path + "rman/log"
     else:
         rman_path = rman_path + "/rman/tmp"
-    ssh_conn.exec_command('''mkdir -p {}'''.format(rman_path))
+        rman_log_path = rman_path + "/rman/log"
+    ssh_conn.exec_command('''mkdir -p {} {}'''.format(rman_path,rman_log_path))
     time.sleep(1)
+    ssh_conn.close()
     return 0
 
 
@@ -39,6 +43,7 @@ def unpack_package(ssh_conn, rman_path):
             stdin, stdout, stderr = ssh_conn.exec_command(cmd2)
             out = stdout.read().decode(encoding='UTF-8')
         else:
+            ssh_conn.close()
             return 0
 
 
@@ -68,7 +73,7 @@ def db_backup(ssh_conn, ins_id, port, mysql_user, mysql_pwd, mysql_path, rman_pa
     stdin, stdout, stderr = ssh_conn.exec_command(mkdir_cmd2)
     backup_work_path = stdout.read().decode(encoding='UTF-8').strip()
     backup_cmd = '''{} xtrabackup --defaults-file={} --backup --target-dir={} \
-    --parallel=4 --compress --compress-threads=2  --stream=xbstream --user={} \
+    --parallel=4 --no-version-check --compress --compress-threads=2  --stream=xbstream --user={} \
     --password={} --socket={} > {}/{} 2>{}/{}'''.format(path_cmd, mysql_cnf, backup_work_path, mysql_user, mysql_pwd,
                                                         mysql_socket, backup_path, backup_file_date, backup_path,
                                                         backup_log)
@@ -85,10 +90,10 @@ def db_backup(ssh_conn, ins_id, port, mysql_user, mysql_pwd, mysql_path, rman_pa
             break
     success_mark_cmd = '''grep "completed OK" {}/{}'''.format(backup_path, backup_log)
     stdin, stdout, stderr = ssh_conn.exec_command(success_mark_cmd)
-    result = stdout.read().decode(encoding='UTF-8').strip()
-    if result:
-        ssh_conn.exec_command('''rm -rf {}'''.format(backup_work_path))
-        ssh_conn.exec_command('''cp {} {}/my.cnf.bak'''.format(mysql_cnf, backup_path))
+    backup_status = stdout.read().decode(encoding='UTF-8').strip()
+    ssh_conn.exec_command('''rm -rf {}'''.format(backup_work_path))
+    ssh_conn.exec_command('''cp {} {}/my.cnf.bak'''.format(mysql_cnf, backup_path))
+    if backup_status:
         gtid_cmd = '''grep "MySQL binlog position" {}/{} | \
         awk -F "[']" '{{print $6}}' |tee {}/gtid'''.format(backup_path, backup_log, backup_path)
         stdin, stdout, stderr = ssh_conn.exec_command(gtid_cmd)
@@ -98,13 +103,32 @@ def db_backup(ssh_conn, ins_id, port, mysql_user, mysql_pwd, mysql_path, rman_pa
         ssh_conn.exec_command(binlog_pos_cmd)
         ssh_conn.exec_command('''touch {}/_XtraBackup'''.format(backup_path))
         ssh_conn.exec_command('''mv {} {}/{}'''.format(backup_path, ins_backup_path, backup_file_name))
+        stdin, stdout, stderr = ssh_conn.exec_command('''du -sh {}/{}'''.format(ins_backup_path, backup_file_name))
+        c, v, k = ssh_conn.exec_command('''ps -ef "du -sh {}/{}" '''.format(ins_backup_path, backup_file_name))
+        vv = v.read().decode(encoding='UTF-8')
+        while True:
+            if vv:
+                time.sleep(2)
+                c, v, k = ssh_conn.exec_command('''ps -ef "du -sh {}/{}" '''.format(ins_backup_path, backup_file_name))
+                vv = v.read().decode(encoding='UTF-8')
+            else:
+                break
+        backup_file_size = stdout.read().decode(encoding='UTF-8').strip().split()
+        ssh_conn.close()
         return {"backup": 1,
                 "backup_date": backup_date,
                 "backup_folder_name": backup_file_name,
                 "backup_name": backup_file_date,
-                "gtid": gtid}
+                "gtid": gtid,
+                "backup_file_size": backup_file_size[0]}
     else:
-        return {"backup": 0}
+        ssh_conn.exec_command('''touch {}/_XtraBackup'''.format(backup_path))
+        ssh_conn.exec_command('''mv {} {}/{}'''.format(backup_path, ins_backup_path, backup_file_name))
+        ssh_conn.close()
+        return {"backup": 0,
+                "backup_date": backup_date,
+                "backup_folder_name": backup_file_name,
+                "backup_name": backup_file_date}
 
 
 if __name__ == '__main__':

@@ -59,3 +59,13 @@ class DatabaseInstance(models.Model):
     role = models.CharField(null=False, max_length=25)
     status = models.CharField(null=False, max_length=25)
 
+
+class DatabaseBackup(models.Model):
+    id = models.AutoField(primary_key=True)
+    backup_date = models.DateTimeField(null=False)
+    ins_id = models.CharField(null=False, unique=False, max_length=25)
+    backup_folder_name = models.CharField(null=False, unique=False, max_length=150)
+    backup_name = models.CharField(null=False, unique=False, max_length=150)
+    gtid = models.CharField(null=True, unique=False, max_length=150)
+    backup_file_size = models.CharField(null=True, unique=False, max_length=150)
+    backup_status = models.CharField(null=False, unique=False, max_length=150)
