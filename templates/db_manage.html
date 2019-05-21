@@ -673,6 +673,13 @@
                     if(data['status']===1||data['status']===2||data['status']===3||data['status']===4||data['status']===6||data['status']===7){
                         removeLoading('install');
                         layer.alert(data["err_msg"],{icon:5});
+                    }else if(data['status']===8){
+                        removeLoading('install');
+                        $("#serverIp").val(data['ip']);
+                        layer.msg('当前机器上未安装备份工具，请先安装',{time:3000, icon:3});
+                        setTimeout(function () {
+                            $("#installBackupToolsModal").modal('show');
+                        },3000);
                     }else if(data["status"] === 5){
                         removeLoading('install');
                         layer.msg("创建数据库实例成功",{time:2000, icon:6});
@@ -764,12 +771,13 @@
             }
         })
     });
+
     $("#btnInstallRmanSubmit").on('click', function () {
         var l = $("#btnInstallRmanSubmit").ladda();
-        var server_id = $("#btn-backup").attr('data-server-id');
+        var server_ip = $("#serverIp").val()
         var rman_path = $("#rmanPath").val();
         var backup_name = $("#s3").val();
-        console.log(server_id);
+        console.log(server_ip);
         console.log(rman_path);
         if(! rman_path){
             layer.msg("安装路径不能为空",{time:2000, icon:5});
@@ -781,7 +789,7 @@
                 type: 'POST',
                 dataType: 'JSON',
                 data: {
-                    "server_id": server_id,
+                    "server_ip": server_ip,
                     "rman_path": rman_path
                 },
                 success: function (data) {
@@ -882,6 +890,7 @@
             },
             function (isConfirm) {
                 if (isConfirm) {
+                    delete_loading();
                     $.ajax({
                         url: "/delete_ins/",
                         dataType: "json",
@@ -891,6 +900,7 @@
                             "port": port
                         },
                         success: function (data) {
+                            removeLoading('delete');
                             if (data["status"] === 1||data["status"] === 2) {
                                 swal("失败", data["err_msg"], "error");
                             } else if (data["status"] === 3) {
@@ -906,6 +916,6 @@
             });
     });
 </script>
-<script src="/static/twofour.js"></script>
+<script src="/static/public_js/twofour.js"></script>
 </body>
 </html>

@@ -1,12 +1,25 @@
 import time
 
 
+def end_of_judgment_execution(ssh_conn, cmd):
+    cmd = cmd
+    ssh_conn = ssh_conn
+    while True:
+        i, o, e = ssh_conn.exec_command('''ps -ef | grep "{}" |grep -v "grep" '''.format(cmd))
+        oo = o.read().decode(encoding='UTF-8').strip()
+        print('oo:{}'.format(oo))
+        print('----------')
+        if oo:
+            time.sleep(5)
+        else:
+            break
+
+
 def upload_rman_tools(sftp_conn):
     sftp_conn = sftp_conn
     local_path = "./MDBMP/mysql_related/rman/rman-backup-tools.tar.gz"
     server_path = "/tmp/rman-backup-tools.tar.gz"
     sftp_conn.put(local_path, server_path)
-    sftp_conn.close()
     return 0
 
 
@@ -14,14 +27,13 @@ def mkdir_rman(ssh_conn, rman_path):
     ssh_conn = ssh_conn
     rman_path = rman_path
     if rman_path[-1] == "/":
-        rman_path = rman_path + "rman/tmp"
+        rman_tmp_path = rman_path + "rman/tmp"
         rman_log_path = rman_path + "rman/log"
     else:
-        rman_path = rman_path + "/rman/tmp"
+        rman_tmp_path = rman_path + "/rman/tmp"
         rman_log_path = rman_path + "/rman/log"
-    ssh_conn.exec_command('''mkdir -p {} {}'''.format(rman_path,rman_log_path))
+    ssh_conn.exec_command('''mkdir -p {} {}'''.format(rman_tmp_path, rman_log_path))
     time.sleep(1)
-    ssh_conn.close()
     return 0
 
 
@@ -43,7 +55,6 @@ def unpack_package(ssh_conn, rman_path):
             stdin, stdout, stderr = ssh_conn.exec_command(cmd2)
             out = stdout.read().decode(encoding='UTF-8')
         else:
-            ssh_conn.close()
             return 0
 
 
@@ -104,17 +115,16 @@ def db_backup(ssh_conn, ins_id, port, mysql_user, mysql_pwd, mysql_path, rman_pa
         ssh_conn.exec_command('''touch {}/_XtraBackup'''.format(backup_path))
         ssh_conn.exec_command('''mv {} {}/{}'''.format(backup_path, ins_backup_path, backup_file_name))
         stdin, stdout, stderr = ssh_conn.exec_command('''du -sh {}/{}'''.format(ins_backup_path, backup_file_name))
-        c, v, k = ssh_conn.exec_command('''ps -ef "du -sh {}/{}" '''.format(ins_backup_path, backup_file_name))
+        c, v, k = ssh_conn.exec_command('''ps -ef | grep "du -sh {}/{}" | grep -v "grep"'''.format(ins_backup_path, backup_file_name))
         vv = v.read().decode(encoding='UTF-8')
         while True:
             if vv:
                 time.sleep(2)
-                c, v, k = ssh_conn.exec_command('''ps -ef "du -sh {}/{}" '''.format(ins_backup_path, backup_file_name))
+                c, v, k = ssh_conn.exec_command('''ps -ef | grep "du -sh {}/{}" | grep -v "grep" '''.format(ins_backup_path, backup_file_name))
                 vv = v.read().decode(encoding='UTF-8')
             else:
                 break
         backup_file_size = stdout.read().decode(encoding='UTF-8').strip().split()
-        ssh_conn.close()
         return {"backup": 1,
                 "backup_date": backup_date,
                 "backup_folder_name": backup_file_name,
@@ -124,18 +134,51 @@ def db_backup(ssh_conn, ins_id, port, mysql_user, mysql_pwd, mysql_path, rman_pa
     else:
         ssh_conn.exec_command('''touch {}/_XtraBackup'''.format(backup_path))
         ssh_conn.exec_command('''mv {} {}/{}'''.format(backup_path, ins_backup_path, backup_file_name))
-        ssh_conn.close()
         return {"backup": 0,
                 "backup_date": backup_date,
                 "backup_folder_name": backup_file_name,
                 "backup_name": backup_file_date}
 
 
+def recover(ssh_conn, rman_path, mycnf_path, backup_path_name, backup_name, ins_id):
+    ssh_conn = ssh_conn
+    rman_path = rman_path
+    rman_tmp = rman_path + '/rman/tmp'
+    mycnf_path = mycnf_path
+    backup_path_name = backup_path_name
+    backup_name = backup_name
+    backup_path = '{}/{}/{}'.format(rman_tmp, backup_path_name, backup_name)
+    date = time.localtime()
+    recover_date = time.strftime("%Y_%m_%d_%H_%M_%S", date)
+    recover_log_file = rman_path + '/rman/log/' + 'recover_' + ins_id + '_' + recover_date + '.log'
+    path_cmd = '''export PATH={}/rman/bin/:$PATH;'''.format(rman_path)
+    mkdir_cmd1 = '''mktemp -d -p {} tmp.rman.XXXXXXXXXX'''.format(rman_tmp)
+    stdin, stdout, stderr = ssh_conn.exec_command(mkdir_cmd1)
+    recover_path = stdout.read().decode(encoding='UTF-8').strip()
+    xbstream_cmd = '''xbstream -x < {} -C {} 2>>{}'''.format(backup_path, recover_path, recover_log_file)
+    ssh_conn.exec_command('''{}{}'''.format(path_cmd, xbstream_cmd))
+    print("++++++++++++")
+    end_of_judgment_execution(ssh_conn, xbstream_cmd)
+    decompress_cmd = '''xtrabackup --decompress --parallel=4 --target-dir={} 2>>{}'''.format(recover_path, recover_log_file)
+    ssh_conn.exec_command('''{}{}'''.format(path_cmd, decompress_cmd))
+    end_of_judgment_execution(ssh_conn, decompress_cmd)
+    prepare_cmd = '''xtrabackup --prepare --target-dir={} 2>>{}'''.format(recover_path, recover_log_file)
+    ssh_conn.exec_command('''{}{}'''.format(path_cmd, prepare_cmd))
+    end_of_judgment_execution(ssh_conn, prepare_cmd)
+    move_back_cmd = '''xtrabackup --defaults-file={} --move-back --target-dir={} 2>>{}'''.format(mycnf_path, recover_path, recover_log_file)
+    ssh_conn.exec_command('''{}{}'''.format(path_cmd, move_back_cmd))
+    end_of_judgment_execution(ssh_conn, move_back_cmd)
+    clean_backup_cmd = '''rm -rf {} {}'''.format(recover_path, '{}/{}'.format(rman_tmp, backup_path_name))
+    ssh_conn.exec_command(clean_backup_cmd)
+    end_of_judgment_execution(ssh_conn, clean_backup_cmd)
+
+
 if __name__ == '__main__':
     from MDBMP.server.link_server import ssh_conn_host
-    ssh_conn = ssh_conn_host('192.168.1.3', 22, 'root', '123456')
-    result = db_backup(ssh_conn, 'mysql-123m12i32', 3306, 'root', '123456', '/data', '/data')
-    print(result)
+    ssh_conn = ssh_conn_host('10.211.55.11', 22, 'root', '123456')
+    # result = db_backup(ssh_conn, 'mysql-123m12i32', 3306, 'root', '123456', '/data', '/data')
+    # print(result)
+    recover(ssh_conn, '/data', '/data/mysql/etc/3306/my.cnf', 'manual_mysql-6u1zjkqw_2019_05_19_14_55_54', '2019_05_19_14_55_54', 'mysql-cd8cd6cs')
     ssh_conn.close()
 
 

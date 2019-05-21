@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 import json
 import time
+import pymysql
 import django.db.utils
 from MDBMP import models
 from MDBMP.mysql.select_identity import admin_yes_or_no
@@ -31,10 +32,11 @@ def login(request):
             auth.login(request, auth_user)
             status = 1
             url = "/index/"
-            return HttpResponse(json.dumps({
+            response = HttpResponse(json.dumps({
                 'status': status,
                 'url': url
             }))
+            return response
         else:
             status = 0
             err_msg = "输入的用户名或者密码有误，请重新输入！"
@@ -47,8 +49,9 @@ def login(request):
 
 @login_required
 def logout(request):
+    rep = redirect('/login/')
     auth.logout(request)
-    return redirect('/login/')
+    return rep
 
 
 @login_required
@@ -118,6 +121,7 @@ def add_server(request):
                                        mem_total=mem_total,
                                        ssh_port=port)
             server_obj.save()
+
             return HttpResponse(json.dumps({"status": status, "url": url}))
 
 
@@ -253,52 +257,167 @@ def install_mysql(request):
         role = '主实例'
     else:
         role = '从实例'
-
-    if backup_name:
-        ins_obj = models.DatabaseInstance.objects.values('password', 'mysql_version').get(group_id=group_id, role='主实例')
-        password = ins_obj['password']
-        pack_name = 'mysql-{}-linux-glibc2.12-x86_64.tar.gz'.format(ins_obj['mysql_version'])
-        print(password)
-        print(pack_name)
-        print(backup_name)
-        backup_ins_id = backup_name.split("_")[1]
-        print(backup_ins_id)
-        return HttpResponse(json.dumps({"status": 5}))
+    server_obj = models.Server.objects.values('ip', 'user', 'password', 'ssh_port', 'rman_path').get(id=server_id)
+    ip = server_obj['ip']
+    server_user = server_obj['user']
+    server_pwd = server_obj['password']
+    ssh_port = server_obj['ssh_port']
+    rman_path = server_obj['rman_path']
+    print(rman_path)
+    result = models.DatabaseInstance.objects.filter(server_id=server_id, port=port)
+    if result.exists():
+        status = 6
+        err_msg = "当前主机({})上存在{}端口,请检查是否填写错误".format(ip, port)
+        return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
     else:
-        server_obj = models.Server.objects.values('ip', 'user', 'password', 'ssh_port').get(id=server_id)
-        ip = server_obj['ip']
-        server_user = server_obj['user']
-        server_pwd = server_obj['password']
-        ssh_port = server_obj['ssh_port']
-        result = models.DatabaseInstance.objects.filter(server_id=server_id, port=port)
-        if result.exists():
-            status = 6
-            err_msg = "当前主机({})上存在{}端口,请检查是否填写错误".format(ip, port)
+        ssh_conn = link_server.ssh_conn_host(ip, ssh_port, server_user, server_pwd)
+        if ssh_conn == 1:
+            status = 1
+            err_msg = "SSH连接失败，请检查IP、用户名、密码是否错误"
+            return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+        elif ssh_conn == 2:
+            status = 2
+            err_msg = "SSH连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
             return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
         else:
-            ssh_conn = link_server.ssh_conn_host(ip, ssh_port, server_user, server_pwd)
-            if ssh_conn == 1:
-                status = 1
-                err_msg = "SSH连接失败，请检查IP、用户名、密码是否错误"
+            sftp_conn = link_server.sftp_conn_host(ip, ssh_port, server_user, server_pwd)
+            if sftp_conn == 1:
+                status = 3
+                err_msg = "SFTP连接失败，请检查IP、用户名、密码是否错误"
                 return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
-            elif ssh_conn == 2:
-                status = 2
-                err_msg = "SSH连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
+            elif sftp_conn == 2:
+                status = 4
+                err_msg = "SFTP连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
                 return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
             else:
-                sftp_conn = link_server.sftp_conn_host(ip, ssh_port, server_user, server_pwd)
-                if sftp_conn == 1:
-                    status = 3
-                    err_msg = "SFTP连接失败，请检查IP、用户名、密码是否错误"
-                    return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
-                elif sftp_conn == 2:
-                    status = 4
-                    err_msg = "SFTP连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
-                    return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+                if backup_name:
+                    if not rman_path:
+                        return HttpResponse(json.dumps({"status": 8, "ip": ip}))
+                    ins_obj = models.DatabaseInstance.objects.values('password', 'mysql_version').get(group_id=group_id, role='主实例')
+                    password = ins_obj['password']
+                    pack_name = 'mysql-{}-linux-glibc2.12-x86_64.tar.gz'.format(ins_obj['mysql_version'])
+                    send_package(sftp_conn, ssh_conn, pack_name)
+                    sftp_conn.close()
+                    print(password)
+                    print(pack_name)
+                    print(backup_name)
+                    backup_ins_id = backup_name.split("_")[1]
+                    print(backup_ins_id)
+                    backup_ins_obj = models.DatabaseInstance.objects.values('server_id', 'port', 'mysql_path').get(instance_id=backup_ins_id)
+                    backup_ins_server_id = backup_ins_obj['server_id']
+                    backup_ins_port = backup_ins_obj['port']
+                    backup_ins_mysql_path = backup_ins_obj['mysql_path']
+                    backup_path = backup_ins_mysql_path + '/mysql/backup/' + str(backup_ins_port) + '/' + backup_name
+                    print(backup_path)
+                    rman_tmp = rman_path + '/rman/tmp'
+                    print(rman_path)
+                    print(rman_tmp)
+                    print(type(server_id))
+                    print(type(backup_ins_server_id))
+                    if int(server_id) == int(backup_ins_server_id):
+                        print(1)
+                        cp_backup_cmd = '''cp -r {} {}'''.format(backup_path, rman_tmp)
+                        ssh_conn.exec_command(cp_backup_cmd)
+                        backup.end_of_judgment_execution(ssh_conn, cp_backup_cmd)
+                    else:
+                        print(2)
+                        backup_server_obj = models.Server.objects.values('ip', 'user', 'password', 'ssh_port',
+                                                                          'rman_path').get(id=backup_ins_server_id)
+                        backup_server_ip = backup_server_obj['ip']
+                        backup_server_user = backup_server_obj['user']
+                        backup_server_pwd = backup_server_obj['password']
+                        backup_server_port = backup_server_obj['ssh_port']
+                        backup_server_rman_path = backup_server_obj['rman_path']
+                        backup_ssh_conn = link_server.ssh_conn_host(backup_server_ip, backup_server_port, backup_server_user, backup_server_pwd)
+                        if backup_ssh_conn == 1:
+                            status = 1
+                            err_msg = "备份服务器SSH连接失败，请检查IP、用户名、密码是否错误"
+                            return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+                        elif backup_ssh_conn == 2:
+                            status = 2
+                            err_msg = "备份服务器SSH连接超时，请检查IP、用户名、密码是否错误,网络是否畅通"
+                            return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+                        else:
+                            path_cmd = 'export PATH={}/rman/bin:$PATH;'.format(backup_server_rman_path)
+                            scp_backup_cmd = '''{}scp.sh {} {} {} {} {} '''.format(path_cmd, backup_path, server_user, ip, rman_tmp, server_pwd)
+                            print(scp_backup_cmd)
+                            backup_ssh_conn.exec_command(scp_backup_cmd)
+                            backup.end_of_judgment_execution(ssh_conn, scp_backup_cmd)
+                            backup_ssh_conn.close()
+                            stdout, mysql_version = install_mysql_ins(ssh_conn, pack_name, port, path, username,
+                                                                      password, ip, high_availability, role)
+                            if stdout == 0:
+                                status = 7
+                                err_msg = mysql_version
+                                ssh_conn.close()
+                                return HttpResponse(json.dumps({"status": status, "err_msg": err_msg}))
+                            else:
+                                if path[-1] == "/":
+                                    mysql_path = path + "mysql"
+                                    mysql_conf = path + "mysql/etc/" + str(port) + '/my.cnf'
+                                else:
+                                    mysql_path = path + "/mysql"
+                                    mysql_conf = path + "/mysql/etc/" + str(port) + '/my.cnf'
+                                backup_obj = models.DatabaseBackup.objects.values('backup_name','gtid').get(backup_folder_name=backup_name)
+                                backup_folder_name = backup_obj['backup_name']
+                                gtid = backup_obj['gtid']
+                                backup.recover(ssh_conn, rman_path, mysql_conf, backup_name, backup_folder_name, ins_name)
+                                ssh_conn.exec_command('''chown -R mysql:mysql {}'''.format(mysql_path))
+                                start_mysql_cmd = '''systemctl start mysqld_{}'''.format(str(port))
+                                ssh_conn.exec_command(start_mysql_cmd)
+                                backup.end_of_judgment_execution(ssh_conn, start_mysql_cmd)
+                                path_cmd = 'export PATH={}/base/{}/bin/:$PATH;'.format(mysql_path, mysql_version)
+                                print(path_cmd)
+                                sql = '''{}mysql -uroot -p{} -h{} -P{} -e "reset master"'''.format(path_cmd,password, ip, port)
+                                print(sql)
+                                k,c,v = ssh_conn.exec_command(sql)
+                                vv = v.read().decode(encoding='UTF-8')
+                                print('1'+vv)
+                                sql = '''{}mysql -uroot -p{} -h{} -P{} -e "reset slave"'''.format(path_cmd,password, ip, port)
+                                print(sql)
+                                k,c,v =ssh_conn.exec_command(sql)
+                                vv = v.read().decode(encoding='UTF-8')
+                                print('2'+vv)
+                                sql = '''{}mysql -uroot -p{} -h{} -P{} -e "set global gtid_purged='{}'"'''.format(path_cmd,password, ip, port, gtid)
+                                print(sql)
+                                k,c,v =ssh_conn.exec_command(sql)
+                                vv = v.read().decode(encoding='UTF-8')
+                                print('3'+vv)
+                                sql = '''{}mysql -uroot -p{} -h{} -P{} -e "CHANGE MASTER TO MASTER_HOST='{}',MASTER_USER='root',MASTER_PASSWORD='{}',MASTER_PORT={},MASTER_AUTO_POSITION=1,MASTER_CONNECT_RETRY=1"'''.format(path_cmd, password, ip, port, backup_server_ip, password, backup_ins_port)
+                                print(sql)
+                                k,c,v =ssh_conn.exec_command(sql)
+                                vv = v.read().decode(encoding='UTF-8')
+                                print('4'+vv)
+                                sql = '''{}mysql -uroot -p{} -h{} -P{} -e "start slave"'''.format(path_cmd,password, ip, port)
+                                print(sql)
+                                k,c,v =ssh_conn.exec_command(sql)
+                                vv = v.read().decode(encoding='UTF-8')
+                                print('5'+vv)
+                                status = 5
+                                url = '/db_manage/'
+                                db_ins_obj = models.DatabaseInstance(
+                                    server_id=server_id,
+                                    mysql_version=mysql_version,
+                                    group_id=group_id,
+                                    instance_id=ins_name,
+                                    instance_alias=alias,
+                                    username='root',
+                                    password=password,
+                                    mysql_path=path,
+                                    port=port,
+                                    high_availability=high_availability,
+                                    status='运行',
+                                    role=role)
+                                db_ins_obj.save()
+                                db_group_obj = models.DatabaseGroup.objects.get(id=group_id)
+                                db_group_obj.instance_number = db_group_obj.instance_number + 1
+                                db_group_obj.save()
+                                ssh_conn.close()
+                                return HttpResponse(json.dumps({"status": status, "url": url}))
                 else:
                     send_package(sftp_conn, ssh_conn, pack_name)
                     sftp_conn.close()
-                    stdout, mysql_version = install_mysql_ins(ssh_conn, pack_name, port, path, username, password, 'mysql', 'mysql', ip)
+                    stdout, mysql_version = install_mysql_ins(ssh_conn, pack_name, port, path, username, password, ip, high_availability, role)
                     if stdout == 0:
                         status = 7
                         err_msg = mysql_version
@@ -308,7 +427,7 @@ def install_mysql(request):
                     else:
                         status = 5
                         url = '/db_manage/'
-                        dbins_obj = models.DatabaseInstance(
+                        db_ins_obj = models.DatabaseInstance(
                             server_id=server_id,
                             mysql_version=mysql_version,
                             group_id=group_id,
@@ -321,11 +440,10 @@ def install_mysql(request):
                             high_availability=high_availability,
                             status='运行',
                             role=role)
-                        dbins_obj.save()
+                        db_ins_obj.save()
                         db_group_obj = models.DatabaseGroup.objects.get(id=group_id)
                         db_group_obj.instance_number = db_group_obj.instance_number + 1
                         db_group_obj.save()
-                        sftp_conn.close()
                         ssh_conn.close()
                         return HttpResponse(json.dumps({"status": status, "url": url}))
 
@@ -496,9 +614,9 @@ def get_rman_path(request):
 @login_required
 @permission_check(4)
 def install_rman(request):
-    server_id = request.POST.get("server_id")
+    server_ip = request.POST.get("server_ip")
     rman_path = request.POST.get("rman_path")
-    server_obj = models.Server.objects.values('ip', 'user', 'password', 'ssh_port').get(id=server_id)
+    server_obj = models.Server.objects.values('ip', 'user', 'password', 'ssh_port').get(ip=server_ip)
     ip = server_obj['ip']
     server_user = server_obj['user']
     server_pwd = server_obj['password']
@@ -526,7 +644,7 @@ def install_rman(request):
             backup.upload_rman_tools(sftp_conn)
             backup.mkdir_rman(ssh_conn, rman_path)
             backup.unpack_package(ssh_conn, rman_path)
-            server_obj = models.Server.objects.get(id=server_id)
+            server_obj = models.Server.objects.get(ip=server_ip)
             server_obj.rman_path = rman_path
             server_obj.save()
             ssh_conn.close()
@@ -835,6 +953,97 @@ def db_monitor(request):
 @login_required
 def no_permission(request):
     return render(request, 'nopermission.html')
+
+
+@login_required
+@permission_check(6)
+def sql_submit(request):
+    menus_obj, menu_grouop_obj = select_sidebar(request)
+    identity = admin_yes_or_no(request)
+    ins_obj = models.DatabaseInstance.objects.values('id', 'instance_id', 'instance_alias').filter(role='主实例')
+    return render(
+        request,
+        "sql_submit.html",
+        {"menus_obj": menus_obj,
+         "menu_grouop_obj": menu_grouop_obj,
+         "identity": identity,
+         "ins_obj": ins_obj})
+
+
+@login_required
+@permission_check(6)
+def get_db(request):
+    ins_id = request.POST.get("ins_id")
+    mysql_user = request.POST.get("mysql_user")
+    mysql_pwd = request.POST.get("mysql_pwd")
+    ins_obj = models.DatabaseInstance.objects.values('server_id', 'port').get(id=ins_id)
+    server_id = ins_obj['server_id']
+    mysql_port = ins_obj['port']
+    server_obj = models.Server.objects.values('ip').get(id=server_id)
+    mysql_ip = server_obj['ip']
+    try:
+        db = pymysql.connect(host=mysql_ip, user=mysql_user, passwd=mysql_pwd, port=mysql_port)
+    except pymysql.err.OperationalError as error:
+        return HttpResponse(json.dumps({'status': 0, "error": repr(error)}))
+    else:
+        cur = db.cursor(cursor=pymysql.cursors.DictCursor)
+        cur.execute("show databases")
+        data = cur.fetchall()
+        databases = json.dumps(data, cls=JsonExtendEncoder)
+        return HttpResponse(json.dumps({'status': 1, "databases": databases}))
+
+
+@login_required
+@permission_check(6)
+def submit_audit(request):
+    ins_id = request.POST.get("ins_id")
+    mysql_user = request.POST.get("mysql_user")
+    mysql_pwd = request.POST.get("mysql_pwd")
+    mysql_db = request.POST.get("mysql_db")
+    sql = request.POST.get("sql")
+    apply_user = request.POST.get("apply_user")
+    apply_date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    print(ins_id)
+    print(mysql_user)
+    print(mysql_pwd)
+    print(mysql_db)
+    print(sql)
+    sql_audit_obj = models.SQLAudit(ins_id=ins_id,
+                                    mysql_user=mysql_user,
+                                    mysql_password=mysql_pwd,
+                                    mysql_db=mysql_db,
+                                    sql_statement=sql,
+                                    audit_status='未审核',
+                                    online_status='未上线',
+                                    apply_user=apply_user,
+                                    apply_date=apply_date)
+    sql_audit_obj.save()
+    return HttpResponse(json.dumps({"status": 1}))
+
+
+@login_required
+@permission_check(6)
+def get_to_audit(request):
+    apply_user = request.GET.get("apply_user")
+    db, cur = create_mysql_conn()
+    sql = "select instance_alias,mysql_db,sql_statement,audit_status,apply_date,mysql_user " \
+          "from MDBMP_sqlaudit a,MDBMP_databaseinstance b " \
+          "where a.ins_id=b.id and a.audit_status='未审核' and a.apply_user=%s"
+    cur.execute(sql, apply_user)
+    data = cur.fetchall()
+    return HttpResponse(json.dumps(data, cls=JsonExtendEncoder))
+
+@login_required
+@permission_check(7)
+def sql_audit(request):
+    menus_obj, menu_grouop_obj = select_sidebar(request)
+    identity = admin_yes_or_no(request)
+    return render(
+        request,
+        "sql_audit.html",
+        {"menus_obj": menus_obj,
+         "menu_grouop_obj": menu_grouop_obj,
+         "identity": identity})
 
 
 @login_required

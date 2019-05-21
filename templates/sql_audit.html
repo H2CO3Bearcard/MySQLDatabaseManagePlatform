@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>M.D.B.M.P | 信息总览</title>
+    <title>M.D.B.M.P | SQL审核</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/font-awesome/css/font-awesome.css" rel="stylesheet">
     <!-- Toastr style -->
@@ -77,73 +77,41 @@
         </div>
         <div class="row wrapper border-bottom white-bg page-heading">
             <div class="col-lg-10">
-                <h2>信息总览</h2>
+                <h2>SQL审核</h2>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item">
                         <a href="/index/">信息总览</a>
                     </li>
                     <li class="breadcrumb-item">
-                        <a>信息总览</a>
+                        <a>SQL审核上线</a>
                     </li>
                     <li class="breadcrumb-item active">
-                        <strong>信息总览</strong>
+                        <strong>SQL审核</strong>
                     </li>
                 </ol>
             </div>
         </div>
         <div class="row">
-            <div class="col-lg-3">
-                <div class="widget style1">
-                        <div class="row">
-                            <div class="col-4 text-center">
-                                <i class="fa fa-user-o fa-5x"></i>
+            <div class="col-lg-12">
+                    <div class="tabs-container">
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li><a class="nav-link active show" data-toggle="tab" href="#tab-1">未审核</a></li>
+                            <li><a class="nav-link" data-toggle="tab" href="#tab-2">已审核</a></li>
+                        </ul>
+                        <div class="tab-content">
+                            <div role="tabpanel" id="tab-1" class="tab-pane active show">
+                                <div class="panel-body">
+                                    <p>1.近日沃尔沃宣布将联合瑞典汽车安全公司奥托立夫(AUTOLIV)成立一个独立子公司，该公司将专攻瞄准未来车型自动驾驶技 术相关的研发。奥托立夫公司(AUTOLIV)是在瑞典设立的一家国际跨国公司，公司多年来研发汽车电子安全系统、电子控制单元，汽车方向盘系统以及夜视 和雷达传感系统，新的合作能够让新公司吸取Autoliv多年来在汽车驾驶安全配件制造方面的经验，研发未来用于沃尔沃或其它厂商的无人驾驶软件系统。</p>
+                                </div>
                             </div>
-                            <div class="col-8 text-right">
-                                <span> 当前用户 </span>
-                                <h2 class="font-bold">{{ request.user }}</h2>
+                            <div role="tabpanel" id="tab-2" class="tab-pane">
+                                <div class="panel-body">
+                                    <p>2.近日沃尔沃宣布将联合瑞典汽车安全公司奥托立夫(AUTOLIV)成立一个独立子公司，该公司将专攻瞄准未来车型自动驾驶技 术相关的研发。奥托立夫公司(AUTOLIV)是在瑞典设立的一家国际跨国公司，公司多年来研发汽车电子安全系统、电子控制单元，汽车方向盘系统以及夜视 和雷达传感系统，新的合作能够让新公司吸取Autoliv多年来在汽车驾驶安全配件制造方面的经验，研发未来用于沃尔沃或其它厂商的无人驾驶软件系统。</p>
+                                </div>
                             </div>
                         </div>
-                </div>
-            </div>
-            <div class="col-lg-3">
-                <div class="widget style1 navy-bg">
-                    <div class="row">
-                        <div class="col-4">
-                            <i class="fa fa-user fa-5x"></i>
-                        </div>
-                        <div class="col-8 text-right">
-                            <span> 用户身份 </span>
-                            <h2 class="font-bold">{{ identity }}</h2>
-                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-lg-3">
-                <div class="widget style1 lazur-bg">
-                    <div class="row">
-                        <div class="col-4">
-                            <i class="fa fa-address-book fa-5x"></i>
-                        </div>
-                        <div class="col-8 text-right">
-                            <span> 当前用户数 </span>
-                            <h2 class="font-bold">{{ user_number }}</h2>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3">
-                <div class="widget style1 yellow-bg">
-                    <div class="row">
-                        <div class="col-4">
-                            <i class="fa fa-music fa-5x"></i>
-                        </div>
-                        <div class="col-8 text-right">
-                            <span> 新专辑 </span>
-                            <h2 class="font-bold">12</h2>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>

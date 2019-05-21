@@ -192,10 +192,12 @@ class ModifyMysqlCnf(object):
                         return 0
 
 
-def install_mysql_ins(ssh_conn, mysql_package, mysql_port, mysql_dir, mysql_user, mysql_password, pri_user, pri_group, hostname):
+def install_mysql_ins(ssh_conn, mysql_package, mysql_port, mysql_dir, mysql_user, mysql_password, hostname, ha_mode, role):
     try:
         ssh_conn = ssh_conn
         hostname = hostname
+        ha_mode = ha_mode
+        role = role
         mysql_package = mysql_package
         mysql_version = mysql_package.partition("-")[2].partition("-")[0]
         mysql_port = mysql_port
@@ -221,15 +223,14 @@ def install_mysql_ins(ssh_conn, mysql_package, mysql_port, mysql_dir, mysql_user
         mysql_socket = mysql_data + "/mysqld.sock"
         mysql_pid = mysql_data + "/mysqld.pid"
         install_mysql_lock_file = mysql_dir + "/base/" + mysql_version + '/INSTALL_MYSQL_LOCK'
-        privilege_user = pri_user
-        privilege_group = pri_group
+        privilege_user = 'mysql'
+        privilege_group = 'mysql'
         mysql_user = mysql_user
         mysql_password = mysql_password
         modifly = ModifyMysqlCnf(ssh_conn, mysql_cnf)
         modifly.create_user('mysql', 'mysql')
         if modifly.judge_dir(mysql_dir) == 1:
             modifly.make_dir(mysql_dir, privilege_user, privilege_group)
-
         if modifly.judge_dir(install_mysql_lock_file) == 1:
             modifly.make_dir(mysql_base, privilege_user, privilege_group)
             ssh_conn.exec_command("touch {}".format(install_mysql_lock_file))
@@ -256,8 +257,13 @@ def install_mysql_ins(ssh_conn, mysql_package, mysql_port, mysql_dir, mysql_user
         modifly.modify_cnf("socket", mysql_socket)
         modifly.modify_cnf("pid_file", mysql_pid)
         modifly.modify_cnf("report_host", hostname)
+        if ha_mode == '主从复制-异步模式':
+            modifly.modify_cnf("rpl_semi_sync_slave_enabled", 0)
+        else:
+            modifly.modify_cnf("rpl_semi_sync_slave_enabled", 1)
         modifly.modify_systemd(privilege_user, privilege_group, mysql_pid, mysql_base, mysql_cnf, mysql_socket, mysql_port)
-        modifly.run_mysql(mysql_base, mysql_user, mysql_password, privilege_user, mysql_port, mysql_socket)
+        if role == '主实例':
+            modifly.run_mysql(mysql_base, mysql_user, mysql_password, privilege_user, mysql_port, mysql_socket)
     except Exception as err:
         error = traceback.format_exc(err)
         return 0, error

@@ -55,6 +55,44 @@ function stop_loading() {
 	$("p.loading-discription").css("font-size","18px");
 }
 
+function delete_loading() {
+	$('body').loading({
+		loadingWidth:380,
+		title:'请稍后',
+		name:'delete',
+		discription:'正在删除数据库实例',
+		direction:'column',
+		type:'origin',
+		// originBg:'#71EA71',
+		originDivWidth:60,
+		originDivHeight:60,
+		originWidth:8,
+		originHeight:8,
+		smallLoading:false,
+		loadingMaskBg:'rgba(0,0,0,0.2)'
+	});
+	$("p.loading-discription").css("font-size","18px");
+}
+
+function delete_backup_loading() {
+	$('body').loading({
+		loadingWidth:380,
+		title:'请稍后',
+		name:'delete',
+		discription:'正在删除数据库实例备份集',
+		direction:'column',
+		type:'origin',
+		// originBg:'#71EA71',
+		originDivWidth:60,
+		originDivHeight:60,
+		originWidth:8,
+		originHeight:8,
+		smallLoading:false,
+		loadingMaskBg:'rgba(0,0,0,0.2)'
+	});
+	$("p.loading-discription").css("font-size","18px");
+}
+
 function loading2() {
 	$('body').loading({
 		loadingWidth:240,

@@ -69,3 +69,20 @@ class DatabaseBackup(models.Model):
     gtid = models.CharField(null=True, unique=False, max_length=150)
     backup_file_size = models.CharField(null=True, unique=False, max_length=150)
     backup_status = models.CharField(null=False, unique=False, max_length=150)
+
+
+class SQLAudit(models.Model):
+    id = models.AutoField(primary_key=True)
+    ins_id = models.CharField(null=False, unique=False, max_length=25)
+    mysql_user = models.CharField(null=False, unique=False, max_length=50)
+    mysql_password = models.CharField(null=False, unique=False, max_length=50)
+    mysql_db = models.CharField(null=False, unique=False, max_length=50)
+    sql_statement = models.TextField(null=False, unique=False)
+    audit_status = models.CharField(null=False, unique=False, max_length=50)
+    online_status = models.CharField(null=False, unique=False, max_length=50)
+    apply_user = models.CharField(null=False, unique=False, max_length=50)
+    audit_user = models.CharField(null=True, unique=False, max_length=50)
+    apply_date = models.DateTimeField(null=False)
+    audit_date = models.DateTimeField(null=True)
+    online_date = models.DateTimeField(null=True)
+    reasons_for_failure = models.CharField(null=True, unique=False, max_length=500)
