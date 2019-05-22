@@ -217,7 +217,7 @@
                 }
             })
         }
-    })
+    });
     $("#b2").on('click', function () {
         var ins_id = $("#s1").val();
         var mysql_user = $("#user").val();
@@ -307,7 +307,7 @@
             }, {
                 title: '审核状态',
                 formatter:function (value, row) {
-                    var audit_status = row.audit_status
+                    var audit_status = row.audit_status;
                         return '<span class="label label-primary">'+audit_status+'</span>'
                 }
             }, {

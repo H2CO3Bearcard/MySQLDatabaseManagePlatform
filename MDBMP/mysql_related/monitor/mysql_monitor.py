@@ -1,13 +1,15 @@
 
 import os
 import json
+
+
 def mysql_status():
-        status = os.popen(''' /data/mysql/base/5.7.21/bin/mysql -uroot -p123456 -S /data/mysql/data/3306/mysqld.sock -s -e "show global status" 2>/dev/null ''')
+    	status = os.popen(''' /data/mysql/base/5.7.21/bin/mysql -uroot -p123456 -S /data/mysql/data/3306/mysqld.sock -s -e "show global status" 2>/dev/null ''')
 	result = {}
 	for line in status.readlines():
-    		line = line.strip()
-    		if not len(line):
-        		break
+		line = line.strip()
+		if not len(line):
+			break
 		try:
 			result[line.split()[0]] = line.split()[1]
 		except IndexError:

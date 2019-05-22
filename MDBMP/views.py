@@ -1140,9 +1140,62 @@ def get_to_not_pass_audit(request):
     return HttpResponse(json.dumps(data, cls=JsonExtendEncoder))
 
 
+@login_required
+@permission_check(7)
 def checked(request):
-    
-    return HttpResponse("OK")
+    audit_user = request.GET.get("audit_user")
+    db, cur = create_mysql_conn()
+    sql = "select instance_alias,mysql_db,sql_statement,audit_status,audit_date," \
+          "apply_date,mysql_user,reasons_for_failure,online_status,apply_user,online_date " \
+          "from MDBMP_sqlaudit a,MDBMP_databaseinstance b " \
+          "where a.ins_id=b.id and a.audit_user=%s"
+    cur.execute(sql, audit_user)
+    data = cur.fetchall()
+    data = json.dumps(data, cls=JsonExtendEncoder)
+    print(data)
+    return HttpResponse(data)
+
+
+@login_required
+@permission_check(7)
+def pass_audit(request):
+    id = request.POST.get("id")
+    audit_user = request.POST.get("audit_user")
+    audit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    sql_obj = models.SQLAudit.objects.get(id=id)
+    sql_obj.audit_user = audit_user
+    sql_obj.audit_date = audit_date
+    sql_obj.audit_status = '已通过'
+    sql_obj.save()
+    return HttpResponse(json.dumps({"status": 0}))
+
+
+@login_required
+@permission_check(7)
+def not_pass_audit(request):
+    id = request.POST.get("id")
+    reasons_for_failure = request.POST.get("reasons_for_failure")
+    audit_user = request.POST.get("audit_user")
+    audit_date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    sql_obj = models.SQLAudit.objects.get(id=id)
+    sql_obj.audit_user = audit_user
+    sql_obj.audit_date = audit_date
+    sql_obj.audit_status = '未通过'
+    sql_obj.reasons_for_failure = reasons_for_failure
+    sql_obj.save()
+    return HttpResponse(json.dumps({"status": 0}))
+
+
+@login_required
+@permission_check(7)
+def nocheck(request):
+    sql = "select a.id,instance_alias,mysql_db,sql_statement,audit_status,apply_date,apply_user,mysql_user " \
+          "from MDBMP_sqlaudit a,MDBMP_databaseinstance b where a.ins_id=b.id and a.audit_status='未审核'"
+    db, cur = create_mysql_conn()
+    cur.execute(sql)
+    data = cur.fetchall()
+    data = json.dumps(data, cls=JsonExtendEncoder)
+    return HttpResponse(data)
 
 
 @login_required
@@ -1169,7 +1222,7 @@ def online_sql(request):
         cur.execute(sql_statement)
         db.commit()
         cur.close()
-    except (pymysql.err.OperationalError, pymysql.err.ProgrammingError) as error:
+    except (pymysql.err.OperationalError, pymysql.err.ProgrammingError, pymysql.err.InternalError) as error:
         return HttpResponse(json.dumps({'status': 1, "error": repr(error)}))
     else:
         online_date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())

@@ -14,6 +14,8 @@
     <link href="/static/js/plugins/gritter/jquery.gritter.css" rel="stylesheet">
     <link href="/static/css/animate.css" rel="stylesheet">
     <link href="/static/css/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/plugins/bootstrap-table/bootstrap-table.min.css">
+    <link rel="stylesheet" href="/static/css/plugins/sweetalert/sweetalert.css">
     <!-- Mainly scripts -->
     <script src="/static/js/jquery-3.1.1.min.js"></script>
     <script src="/static/js/jquery.cookie.js"></script>
@@ -25,6 +27,9 @@
     <script src="/static/js/inspinia.js"></script>
     <script src="/static/js/plugins/pace/pace.min.js"></script>
     <script src="/static/js/plugins/toastr/toastr.min.js"></script>
+    <script src="/static/js/plugins/bootstrap-table/bootstrap-table.min.js"></script>
+    <script src="/static/js/plugins/bootstrap-table/bootstrap-table-zh-CN.min.js"></script>
+    <script src="/static/js/plugins/sweetalert/sweetalert.min.js"></script>
 </head>
 
 <body>
@@ -38,17 +43,18 @@
                     </div>
                 </li>
                 {% for foo in menu_grouop_obj %}
-                 <li>
-                    <a href="{{ foo.group_url }}"><i class="fa {{ foo.group_icon }}"></i> <span class="nav-label">{{ foo.group_name }}</span><span
-                            class="fa arrow"></span></a>
-                    <ul class="nav nav-second-level collapse">
-                        {% for fooo in menus_obj %}
-                            {% if foo.id == fooo.menu_group_id %}
-                                <li><a href="{{ fooo.menu_url }}">{{ fooo.menu_name }}</a></li>
-                            {% endif %}
-                        {% endfor %}
-                    </ul>
-                </li>
+                    <li>
+                        <a href="{{ foo.group_url }}"><i class="fa {{ foo.group_icon }}"></i> <span
+                                class="nav-label">{{ foo.group_name }}</span><span
+                                class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            {% for fooo in menus_obj %}
+                                {% if foo.id == fooo.menu_group_id %}
+                                    <li><a href="{{ fooo.menu_url }}">{{ fooo.menu_name }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </li>
                 {% endfor %}
             </ul>
         </div>
@@ -93,29 +99,278 @@
         </div>
         <div class="row">
             <div class="col-lg-12">
-                    <div class="tabs-container">
-                        <ul class="nav nav-tabs" role="tablist">
-                            <li><a class="nav-link active show" data-toggle="tab" href="#tab-1">未审核</a></li>
-                            <li><a class="nav-link" data-toggle="tab" href="#tab-2">已审核</a></li>
-                        </ul>
-                        <div class="tab-content">
-                            <div role="tabpanel" id="tab-1" class="tab-pane active show">
-                                <div class="panel-body">
-                                    <p>1.近日沃尔沃宣布将联合瑞典汽车安全公司奥托立夫(AUTOLIV)成立一个独立子公司，该公司将专攻瞄准未来车型自动驾驶技 术相关的研发。奥托立夫公司(AUTOLIV)是在瑞典设立的一家国际跨国公司，公司多年来研发汽车电子安全系统、电子控制单元，汽车方向盘系统以及夜视 和雷达传感系统，新的合作能够让新公司吸取Autoliv多年来在汽车驾驶安全配件制造方面的经验，研发未来用于沃尔沃或其它厂商的无人驾驶软件系统。</p>
+                <div class="tabs-container">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li><a class="nav-link active show" data-toggle="tab" href="#tab-1">未审核</a></li>
+                        <li><a class="nav-link" data-toggle="tab" href="#tab-2">已审核历史</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div role="tabpanel" id="tab-1" class="tab-pane active show">
+                            <div class="panel-body">
+                                <table id="NoCheck" class="table table-bordered"></table>
+                                <div class="modal inmodal fade" id="NoCheckModal" tabindex="-1" role="dialog" style="display: none;" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">×</span><span class="sr-only">Close</span></button>
+                                            <h4 class="modal-title">驳回SQL!</h4>
+                                        </div>
+                                        <div class="modal-body">
+                                            <h3>请填写驳回原因：</h3>
+                                            <textarea id="tx1" class="form-control" rows="5"></textarea>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button id="b1" type="button" class="btn btn-white">取消</button>
+                                            <button id="b2" type="button" class="btn btn-primary">确认驳回</button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div role="tabpanel" id="tab-2" class="tab-pane">
-                                <div class="panel-body">
-                                    <p>2.近日沃尔沃宣布将联合瑞典汽车安全公司奥托立夫(AUTOLIV)成立一个独立子公司，该公司将专攻瞄准未来车型自动驾驶技 术相关的研发。奥托立夫公司(AUTOLIV)是在瑞典设立的一家国际跨国公司，公司多年来研发汽车电子安全系统、电子控制单元，汽车方向盘系统以及夜视 和雷达传感系统，新的合作能够让新公司吸取Autoliv多年来在汽车驾驶安全配件制造方面的经验，研发未来用于沃尔沃或其它厂商的无人驾驶软件系统。</p>
-                                </div>
+                            </div>
+                        </div>
+                        <div role="tabpanel" id="tab-2" class="tab-pane">
+                            <div class="panel-body">
+                                <table id="Checked" class="table table-bordered"></table>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
         </div>
     </div>
 </div>
 <script>
+    $('#NoCheck').bootstrapTable({
+        url: '/nocheck/',
+        method: 'POST',
+        pagination: true,
+        clickToSelect: true,//单击选中
+        paginationLoop: false,
+        pageNumber: 1, //初始化加载第一页
+        sidePagination: 'client',//server:服务器端分页|client：前端分页
+        pageSize: 15,//单页记录数
+        showRefresh: false,//刷新按钮
+        //pageList: [5, 10, 15],//可选择单页记录数
+        search: true,//搜索框
+        detailView: true,
+        icons: {
+            detailOpen: 'fa-chevron-right',
+            detailClose: 'fa-chevron-down'
+        },
+        detailFormatter: function (index, row) {
+            var sql_statement = row.sql_statement;
+            sql_statement = sql_statement.replace(/\n/g, "<br>");
+            return '详细SQL:<br>' + sql_statement
+        },
+        onClickRow: function (row, $element) {
+        },
+        columns: [{
+            field: 'instance_alias',
+            title: '实例别名'
+        }, {
+            field: 'mysql_db',
+            title: '数据库'
+        }, {
+            field: 'mysql_user',
+            title: '执行用户'
+        }, {
+            title: '审核状态',
+            formatter: function (value, row) {
+                var audit_status = row.audit_status;
+                return '<span class="label label-primary">' + audit_status + '</span>'
+            }
+        }, {
+            field: 'apply_user',
+            title: '提交人'
+        }, {
+            field: 'apply_date',
+            title: '提交时间'
+        }, {
+            title: '简略SQL',
+            formatter: function (value, row) {
+                var sql_statement = row.sql_statement;
+                if (sql_statement.length > 30) {
+                    return sql_statement.substr(0, 30) + '......'
+                } else {
+                    return sql_statement
+                }
+            },
+            width: '30%'
+        }, {
+            title: '操作',
+            formatter: function (value, row) {
+                var id = row.id;
+                return "<button id=" + id + " class=\"btn btn-primary checked\" type=\"button\"><i class=\"fa fa-check\"></i>&nbsp;&nbsp;<span class=\"bold\">通过</span></button>" +
+                    " <button id=" + id + " class=\"btn btn-danger nocheck\" type=\"button\"><i class=\"fa fa-times\"></i>&nbsp;&nbsp;<span class=\"bold\">驳回</span></button>"
+            },
+            width: "12%"
+        }]
+    });
+    $('#Checked').bootstrapTable({
+        url: '/checked/?audit_user={{ request.user }}',
+        method: 'POST',
+        pagination: true,
+        clickToSelect: true,//单击选中
+        paginationLoop: false,
+        pageNumber: 1, //初始化加载第一页
+        sidePagination: 'client',//server:服务器端分页|client：前端分页
+        pageSize: 15,//单页记录数
+        showRefresh: false,//刷新按钮
+        //pageList: [5, 10, 15],//可选择单页记录数
+        search: true,//搜索框
+        detailView: true,
+        icons: {
+            detailOpen: 'fa-chevron-right',
+            detailClose: 'fa-chevron-down'
+        },
+        detailFormatter: function (index, row) {
+            var sql_statement = row.sql_statement;
+            var reasons_for_failure = row.reasons_for_failure;
+            sql_statement = sql_statement.replace(/\n/g, "<br>");
+            return '详细SQL:<br>' + sql_statement + '<br>驳回原因：<br>' + reasons_for_failure
+        },
+        onClickRow: function (row, $element) {
+        },
+        columns: [{
+            field: 'instance_alias',
+            title: '实例别名'
+        }, {
+            field: 'mysql_db',
+            title: '数据库'
+        }, {
+            field: 'mysql_user',
+            title: '执行用户'
+        }, {
+            title: '审核状态',
+            formatter: function (value, row) {
+                var audit_status = row.audit_status;
+                if (audit_status === '已通过') {
+                    return '<span class="label label-primary">' + audit_status + '</span>'
+                } else {
+                    return '<span class="label label-danger">' + audit_status + '</span>'
+                }
+            }
+        }, {
+            field: 'audit_date',
+            title: '审核时间'
+        }, {
+            field: 'apply_user',
+            title: '提交人'
+        }, {
+            field: 'apply_date',
+            title: '提交时间'
+        }, {
+            title: '上线状态',
+            formatter: function (value, row) {
+                var online_status = row.online_status;
+                if (!online_status) {
+                    return '-'
+                } else if (online_status === '已上线') {
+                    return '<span class="label label-primary">' + online_status + '</span>'
+                } else {
+                    return '<span class="label label-success">' + online_status + '</span>'
+                }
+            }
+        }, {
+            field: 'online_date',
+            title: '上线时间'
+        }, {
+            title: '简略SQL',
+            formatter: function (value, row) {
+                var sql_statement = row.sql_statement;
+                if (sql_statement.length > 30) {
+                    return sql_statement.substr(0, 30) + '......'
+                } else {
+                    return sql_statement
+                }
+            },
+            width: '20%'
+        }, {
+            title: '驳回原因',
+            formatter: function (value, row) {
+                var reasons_for_failure = row.reasons_for_failure;
+                if (!reasons_for_failure) {
+                    return reasons_for_failure
+                } else if (reasons_for_failure.length > 20) {
+                    return reasons_for_failure.substr(0, 19) + '......'
+                } else {
+                    return reasons_for_failure
+                }
+            },
+        }]
+    });
+    $("tbody").on('click', '.checked', function () {
+        var id = $(this).attr('id');
+        var audit_user = '{{ request.user }}';
+        swal({
+                title: "你确定？",
+                text: "你确定这条SQL通过审核吗？",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#DD6B55",
+                confirmButtonText: "通过",
+                cancelButtonText: "取消",
+                closeOnConfirm: false,
+                closeOnCancel: false
+            },
+            function (isConfirm) {
+                if (isConfirm) {
+                    $.ajax({
+                        url: '/pass_audit/',
+                        type: 'POST',
+                        dataType: 'JSON',
+                        data: {
+                            "id": id,
+                            "audit_user": audit_user
+                        },
+                        success: function (data) {
+                            if (data['status'] === 0) {
+                                swal("成功", "SQL上线成功:)", "success");
+                                $('#NoCheck').bootstrapTable('refresh');
+                            } else {
+                                swal("失败", data['error'], "error");
+                            }
+                        }
+                    })
+                } else {
+                    swal("取消", "这个SQL现在还没有通过审核:)", "error");
+                }
+            });
+    })
+    $("tbody").on('click', '.nocheck', function () {
+        var id = $(this).attr('id');
+        $('#NoCheckModal').modal('show');
+        $('#b2').attr('data-sql-id',id);
+    });
+    $("#b1").on('click', function () {
+        $('#NoCheckModal').modal('hide');
+        $('#tx1').val('');
+        $('#b2').attr('data-sql-id','')
+    });
+    $("#b2").on('click', function () {
+        var id = $('#b2').attr('data-sql-id');
+        var reasons_for_failure = $("#tx1").val();
+        var audit_user = '{{ request.user }}';
+        $('#NoCheckModal').modal('hide');
+        $.ajax({
+            url: '/not_pass_audit/',
+            dataType: 'JSON',
+            type: 'POST',
+            data: {
+                "id": id,
+                "reasons_for_failure": reasons_for_failure,
+                "audit_user": audit_user
+            },
+            success: function (data) {
+                if (data['status'] === 0) {
+                    swal("成功", "SQL驳回成功:)", "success");
+                    $("#tx1").val('');
+                    $('#b2').attr('data-sql-id','')
+                    $('#NoCheck').bootstrapTable('refresh');
+                }
+            }
+        })
+    })
 </script>
 </body>
 </html>
