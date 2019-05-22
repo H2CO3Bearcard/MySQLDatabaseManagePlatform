@@ -16,6 +16,7 @@
     <link href="/static/css/style.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/plugins/bootstrap-select/bootstrap-select.min.css">
     <link rel="stylesheet" href="/static/css/plugins/bootstrap-table/bootstrap-table.min.css">
+    <link rel="stylesheet" href="/static/css/plugins/sweetalert/sweetalert.css">
     <!-- Mainly scripts -->
     <script src="/static/js/jquery-3.1.1.min.js"></script>
     <script src="/static/js/jquery.cookie.js"></script>
@@ -31,6 +32,7 @@
     <script src="/static/js/plugins/bootstrap-select/defaults-zh_CN.min.js"></script>
     <script src="/static/js/plugins/bootstrap-table/bootstrap-table.min.js"></script>
     <script src="/static/js/plugins/bootstrap-table/bootstrap-table-zh-CN.min.js"></script>
+    <script src="/static/js/plugins/sweetalert/sweetalert.min.js"></script>
     <script src="/static/layer/layer.js"></script>
 </head>
 
@@ -103,9 +105,9 @@
                     <div class="tabs-container">
                         <ul class="nav nav-tabs" role="tablist">
                             <li><a class="nav-link active show" data-toggle="tab" href="#tab-0">提交审核</a></li>
-                            <li><a class="nav-link" data-toggle="tab" href="#tab-1">审核中</a></li>
-                            <li><a class="nav-link" data-toggle="tab" href="#tab-2">审核通过历史</a></li>
-                            <li><a class="nav-link" data-toggle="tab" href="#tab-3">审核未通过历史</a></li>
+                            <li><a id="a1" class="nav-link" data-toggle="tab" href="#tab-1">审核中</a></li>
+                            <li><a id="a2" class="nav-link" data-toggle="tab" href="#tab-2">审核通过历史</a></li>
+                            <li><a id="a3" class="nav-link" data-toggle="tab" href="#tab-3">审核未通过历史</a></li>
                         </ul>
                         <div class="tab-content">
                             <div role="tabpanel" id="tab-0" class="tab-pane active show">
@@ -161,12 +163,12 @@
                             </div>
                             <div role="tabpanel" id="tab-2" class="tab-pane">
                                 <div class="panel-body">
-                                    <p>2.近日沃尔沃宣布将联合瑞典汽车安全公司奥托立夫(AUTOLIV)成立一个独立子公司，该公司将专攻瞄准未来车型自动驾驶技 术相关的研发。奥托立夫公司(AUTOLIV)是在瑞典设立的一家国际跨国公司，公司多年来研发汽车电子安全系统、电子控制单元，汽车方向盘系统以及夜视 和雷达传感系统，新的合作能够让新公司吸取Autoliv多年来在汽车驾驶安全配件制造方面的经验，研发未来用于沃尔沃或其它厂商的无人驾驶软件系统。</p>
+                                    <table id="PassAuditTable" class="table table-bordered"></table>
                                 </div>
                             </div>
                             <div role="tabpanel" id="tab-3" class="tab-pane">
                                 <div class="panel-body">
-                                    <p>3.近日沃尔沃宣布将联合瑞典汽车安全公司奥托立夫(AUTOLIV)成立一个独立子公司，该公司将专攻瞄准未来车型自动驾驶技 术相关的研发。奥托立夫公司(AUTOLIV)是在瑞典设立的一家国际跨国公司，公司多年来研发汽车电子安全系统、电子控制单元，汽车方向盘系统以及夜视 和雷达传感系统，新的合作能够让新公司吸取Autoliv多年来在汽车驾驶安全配件制造方面的经验，研发未来用于沃尔沃或其它厂商的无人驾驶软件系统。</p>
+                                    <table id="NotPassAuditTable" class="table table-bordered"></table>
                                 </div>
                             </div>
                         </div>
@@ -260,6 +262,15 @@
             })
         }
     });
+    $("#a1").on('click', function () {
+        $('#ToAuditTable').bootstrapTable('refresh');
+    });
+    $("#a2").on('click', function () {
+        $('#PassAuditTable').bootstrapTable('refresh');
+    });
+    $("#a3").on('click', function () {
+        $('#NotPassAuditTable').bootstrapTable('refresh');
+    });
     $('#ToAuditTable').bootstrapTable({
             url: '/get_to_audit/?apply_user={{ request.user }}',
             method: 'POST',
@@ -315,6 +326,200 @@
                 width: '30%'
             }]
         });
+    $('#PassAuditTable').bootstrapTable({
+            url: '/get_to_pass_audit/?apply_user={{ request.user }}',
+            method: 'POST',
+            pagination: true,
+            clickToSelect: true,//单击选中
+            paginationLoop: false,
+            pageNumber: 1, //初始化加载第一页
+            sidePagination: 'client',//server:服务器端分页|client：前端分页
+            pageSize: 15,//单页记录数
+            showRefresh: false,//刷新按钮
+            //pageList: [5, 10, 15],//可选择单页记录数
+            search: true,//搜索框
+            detailView: true,
+            icons: {
+                detailOpen: 'fa-chevron-right',
+                detailClose: 'fa-chevron-down'
+            },
+            detailFormatter: function(index, row, element){
+                var sql_statement = row.sql_statement;
+                sql_statement = sql_statement.replace(/\n/g,"<br>");
+                return '详细SQL:<br>' + sql_statement
+            },
+            onClickRow: function(row, $element){
+            },
+            columns: [{
+                field: 'instance_alias',
+                title: '实例别名'
+            }, {
+                field: 'mysql_db',
+                title: '数据库'
+            }, {
+                field: 'mysql_user',
+                title: '执行用户'
+            }, {
+                title: '审核状态',
+                formatter:function (value, row) {
+                    var audit_status = row.audit_status
+                        return '<span class="label label-primary">'+audit_status+'</span>'
+                }
+            }, {
+                field: 'audit_date',
+                title: '审核时间'
+            }, {
+                field: 'audit_user',
+                title: '审核人'
+            }, {
+                field: 'apply_date',
+                title: '提交时间'
+            }, {
+                title: '上线状态',
+                formatter:function (value, row) {
+                    var online_status = row.online_status;
+                    if (online_status === '已上线'){
+                        return '<span class="label label-primary">'+online_status+'</span>'
+                    }else {
+                        return '<span class="label label-success">'+online_status+'</span>'
+                    }
+                }
+            }, {
+                field: 'online_date',
+                title: '上线时间'
+            }, {
+                title: '简略SQL',
+                formatter: function (value, row) {
+                    var sql_statement = row.sql_statement;
+                    if (sql_statement.length >50){
+                        return sql_statement.substr(0,50) + '......'
+                    }else {
+                        return sql_statement
+                    }
+                },
+                width: '20%'
+            }, {
+                title: '操作',
+                formatter: function (value, row) {
+                    var  id = row.id;
+                    var online_status = row.online_status;
+                    if(online_status==='已上线'){
+                        return "<button id="+id+" disabled=\"disabled\" class=\"btn btn-success \" type=\"button\"><i class=\"fa fa-upload\"></i>&nbsp;&nbsp;<span class=\"bold\">上线</span></button>"
+                    }else {
+                        return "<button id="+id+" class=\"btn btn-success online \" type=\"button\"><i class=\"fa fa-upload\"></i>&nbsp;&nbsp;<span class=\"bold\">上线</span></button>"
+                    }
+                },
+            }]
+        });
+    $('#NotPassAuditTable').bootstrapTable({
+            url: '/get_to_not_pass_audit/?apply_user={{ request.user }}',
+            method: 'POST',
+            pagination: true,
+            clickToSelect: true,//单击选中
+            paginationLoop: false,
+            pageNumber: 1, //初始化加载第一页
+            sidePagination: 'client',//server:服务器端分页|client：前端分页
+            pageSize: 15,//单页记录数
+            showRefresh: false,//刷新按钮
+            //pageList: [5, 10, 15],//可选择单页记录数
+            search: true,//搜索框
+            detailView: true,
+            icons: {
+                detailOpen: 'fa-chevron-right',
+                detailClose: 'fa-chevron-down'
+            },
+            detailFormatter: function(index, row){
+                var sql_statement = row.sql_statement;
+                var reasons_for_failure = row.reasons_for_failure;
+                sql_statement = sql_statement.replace(/\n/g,"<br>");
+                return '详细SQL:<br>' + sql_statement + '<br>驳回原因：<br>' + reasons_for_failure
+            },
+            onClickRow: function(row, $element){
+            },
+            columns: [{
+                field: 'instance_alias',
+                title: '实例别名'
+            }, {
+                field: 'mysql_db',
+                title: '数据库'
+            }, {
+                field: 'mysql_user',
+                title: '执行用户'
+            }, {
+                title: '审核状态',
+                formatter:function (value, row) {
+                    var audit_status = row.audit_status;
+                        return '<span class="label label-danger">'+audit_status+'</span>'
+                }
+            }, {
+                field: 'audit_user',
+                title: '审核人'
+            }, {
+                field: 'audit_date',
+                title: '审核时间'
+            }, {
+                field: 'audit_date',
+                title: '提交时间'
+            }, {
+                title: '简略SQL',
+                formatter: function (value, row) {
+                    var sql_statement = row.sql_statement;
+                    if (sql_statement.length >50){
+                        return sql_statement.substr(0,50) + '......'
+                    }else {
+                        return sql_statement
+                    }
+                },
+                width: '30%'
+            }, {
+                title: '驳回原因',
+                formatter: function (value, row) {
+                    var reasons_for_failure = row.reasons_for_failure;
+                    if (reasons_for_failure.length >10){
+                        return reasons_for_failure.substr(0,10) + '......'
+                    }else {
+                        return reasons_for_failure
+                    }
+                },
+                width: '10%'
+            }]
+        });
+    $("tbody").on('click','.online',function () {
+        var id = $(this).attr('id');
+        swal({
+            title: "你确定？",
+            text: "你确定要将此SQL上线吗",
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "上线",
+            cancelButtonText: "取消",
+            closeOnConfirm: false,
+            closeOnCancel: false
+        },
+        function (isConfirm) {
+            if (isConfirm) {
+                $.ajax({
+                    url: '/online_sql/',
+                    type: 'POST',
+                    dataType: 'JSON',
+                    data: {
+                        "id": id
+                    },
+                    success: function (data) {
+                        if(data['status']===0){
+                            swal("成功", "SQL上线成功:)", "success");
+                            $('#PassAuditTable').bootstrapTable('refresh');
+                        }else {
+                            swal("失败", data['error'], "error");
+                        }
+                    }
+                })
+            } else {
+                swal("取消", "你上线SQL的请求取消了:)", "error");
+            }
+        });
+    })
 </script>
 </body>
 </html>

@@ -25,6 +25,8 @@
     <script src="/static/js/inspinia.js"></script>
     <script src="/static/js/plugins/pace/pace.min.js"></script>
     <script src="/static/js/plugins/toastr/toastr.min.js"></script>
+    <script src="/static/js/plugins/sparkline/jquery.sparkline.min.js"></script>
+    <script src="/static/js/plugins/chartJs/Chart.min.js"></script>
 </head>
 
 <body>
@@ -38,17 +40,18 @@
                     </div>
                 </li>
                 {% for foo in menu_grouop_obj %}
-                 <li>
-                    <a href="{{ foo.group_url }}"><i class="fa {{ foo.group_icon }}"></i> <span class="nav-label">{{ foo.group_name }}</span><span
-                            class="fa arrow"></span></a>
-                    <ul class="nav nav-second-level collapse">
-                        {% for fooo in menus_obj %}
-                            {% if foo.id == fooo.menu_group_id %}
-                                <li><a href="{{ fooo.menu_url }}">{{ fooo.menu_name }}</a></li>
-                            {% endif %}
-                        {% endfor %}
-                    </ul>
-                </li>
+                    <li>
+                        <a href="{{ foo.group_url }}"><i class="fa {{ foo.group_icon }}"></i> <span
+                                class="nav-label">{{ foo.group_name }}</span><span
+                                class="fa arrow"></span></a>
+                        <ul class="nav nav-second-level collapse">
+                            {% for fooo in menus_obj %}
+                                {% if foo.id == fooo.menu_group_id %}
+                                    <li><a href="{{ fooo.menu_url }}">{{ fooo.menu_name }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </li>
                 {% endfor %}
             </ul>
         </div>
@@ -93,16 +96,16 @@
         </div>
         <div class="row">
             <div class="col-lg-3">
-                <div class="widget style1">
-                        <div class="row">
-                            <div class="col-4 text-center">
-                                <i class="fa fa-user-o fa-5x"></i>
-                            </div>
-                            <div class="col-8 text-right">
-                                <span> 当前用户 </span>
-                                <h2 class="font-bold">{{ request.user }}</h2>
-                            </div>
+                <div class="widget style1 red-bg">
+                    <div class="row">
+                        <div class="col-4 text-center">
+                            <i class="fa fa-user-o fa-5x"></i>
                         </div>
+                        <div class="col-8 text-right">
+                            <span> 当前用户 </span>
+                            <h2 class="font-bold">{{ request.user }}</h2>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="col-lg-3">
@@ -135,19 +138,144 @@
                 <div class="widget style1 yellow-bg">
                     <div class="row">
                         <div class="col-4">
-                            <i class="fa fa-music fa-5x"></i>
+                            <i class="fa fa-desktop fa-5x"></i>
                         </div>
                         <div class="col-8 text-right">
-                            <span> 新专辑 </span>
-                            <h2 class="font-bold">12</h2>
+                            <span> 当前服务器数 </span>
+                            <h2 class="font-bold">{{ server_number }}</h2>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox ">
+                    <div class="ibox-content">
+                        <div>
+                            <h1 class="m-b-xs">服务器内存状态监控</h1>
+                        </div>
+
+                        <div>
+                            <iframe class="chartjs-hidden-iframe"
+                                    style="width: 100%; display: block; border: 0px; height: 0px; margin: 0px; position: absolute; left: 0px; right: 0px; top: 0px; bottom: 0px;"></iframe>
+                            <canvas id="ServerFree" height="536" width="2300"
+                                    style="display: block; width: 1150px; height: 268px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox ">
+                    <div class="ibox-content">
+                        <div>
+                            <h1 class="m-b-xs">服务器CPU负载监控</h1>
+                        </div>
+
+                        <div>
+                            <canvas id="CpuLoad" height="536" width="2300"
+                                    style="display: block; width: 1150px; height: 268px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+                    <div class="ibox ">
+                        <div class="ibox-title">
+                            <h5>数据库在线情况</h5>
+
+                        </div>
+                        <div class="ibox-content">
+                            <div><iframe class="chartjs-hidden-iframe" style="width: 100%; display: block; border: 0px; height: 0px; margin: 0px; position: absolute; left: 0px; right: 0px; top: 0px; bottom: 0px;"></iframe>
+                                <canvas id="DbOnline" height="606" width="1300" style="display: block; width: 650px; height: 303px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
     </div>
 </div>
 <script>
+    function load_data(){
+                   $.ajax({
+                url: '/index_get_monitor/',
+                type: 'POST',
+                dataType: 'JSON',
+                success: function (data) {
+                    var lineData = {
+                        labels: [data[9]['date'],data[8]['date'],data[7]['date'],
+                            data[6]['date'],data[5]['date'],data[4]['date'],data[3]['date']
+                            ,data[2]['date'],data[1]['date'],data[0]['date']],
+                        datasets: [
+                            {
+                                label: "内存使用率",
+                                backgroundColor: "rgba(26,179,148,0.5)",
+                                borderColor: "rgba(26,179,148,0.7)",
+                                pointBackgroundColor: "rgba(26,179,148,1)",
+                                pointBorderColor: "#fff",
+                                data: [data[9]['free_used'], data[8]['free_used'], data[7]['free_used'], data[6]['free_used'],
+                                    data[5]['free_used'], data[4]['free_used'], data[3]['free_used'],data[2]['free_used'],
+                                data[1]['free_used'],data[0]['free_used']]
+                            }
+                        ]
+                    };
+                    var lineOptions = {
+                        responsive: true,
+                        animation : false,
+                        bezierCurve: false,
+                    };
+                    var ctx = document.getElementById("ServerFree").getContext("2d");
+                    new Chart(ctx, {type: 'line', data: lineData, options:lineOptions});
+
+                    var CpuData = {
+                        labels: [data[9]['date'],data[8]['date'],data[7]['date'],
+                            data[6]['date'],data[5]['date'],data[4]['date'],data[3]['date']
+                            ,data[2]['date'],data[1]['date'],data[0]['date']],
+                        datasets: [
+                            {
+                                label: "CPU平均负载",
+                                backgroundColor: "rgba(26,179,148,0.5)",
+                                borderColor: "rgba(26,179,148,0.7)",
+                                pointBackgroundColor: "rgba(26,179,148,1)",
+                                pointBorderColor: "#fff",
+                                data: [data[9]['cpu_load'], data[8]['cpu_load'], data[7]['cpu_load'], data[6]['cpu_load'],
+                                    data[5]['cpu_load'], data[4]['cpu_load'], data[3]['cpu_load'],data[2]['cpu_load'],
+                                data[1]['cpu_load'],data[0]['cpu_load']]
+                           }
+                        ]
+                    };
+                    var cpu_load = document.getElementById("CpuLoad").getContext("2d");
+                    new Chart(cpu_load, {type: 'line', data: CpuData, options:lineOptions});
+
+                }
+            });
+    }
+    function load_data2() {
+        var doughnutData = {
+        labels: ["online","failed" ],
+        datasets: [{
+            data: [{{ online_db }},{{ failed_db }}],
+            backgroundColor: ["#65de78","#cf1b0e"]
+        }]
+    } ;
+    var doughnutOptions = {
+        responsive: true
+    };
+    var ctx4 = document.getElementById("DbOnline").getContext("2d");
+    new Chart(ctx4, {type: 'doughnut', data: doughnutData, options:doughnutOptions});
+    }
+    load_data2();
+    load_data();
+     $(function(){
+        setInterval(function(){
+            load_data();
+        }, 5000);
+    });
 </script>
+<script src="/static/public_js/fixedsidebar.js"></script>
 </body>
 </html>

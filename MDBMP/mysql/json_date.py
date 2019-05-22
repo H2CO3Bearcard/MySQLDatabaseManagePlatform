@@ -1,6 +1,7 @@
 from datetime import datetime
 from datetime import date
 import json
+import decimal
 
 
 class JsonExtendEncoder(json.JSONEncoder):
@@ -15,6 +16,8 @@ class JsonExtendEncoder(json.JSONEncoder):
             return o.strftime('%Y-%m-%d %H:%M:%S')
         elif isinstance(o, date):
             return o.strftime('%Y-%m-%d')
+        elif isinstance(o, decimal.Decimal):
+            return float(o)
         else:
             return json.JSONEncoder.default(self, o)
 

@@ -60,13 +60,19 @@ def index(request):
     menus_obj, menu_grouop_obj = select_sidebar(request)
     identity = admin_yes_or_no(request)
     user_number = User.objects.all().count()
+    server_number = User.objects.all().count()
+    failed_db = models.DatabaseInstance.objects.filter(status='停止').count()
+    online_db = models.DatabaseInstance.objects.filter(status='运行').count()
     return render(
         request,
         "index.html",
         {"menus_obj": menus_obj,
          "menu_grouop_obj": menu_grouop_obj,
          "identity": identity,
-         "user_number": user_number})
+         "user_number": user_number,
+         "server_number": server_number,
+         "failed_db": failed_db,
+         "online_db": online_db})
 
 
 @login_required
@@ -950,6 +956,80 @@ def db_monitor(request):
          "identity": identity})
 
 
+def get_monitor_data(request):
+    data = request.body.decode(encoding='UTF-8')
+    data = json.loads(data)
+    ip = data['ip']
+    data_time = data['date_time']
+    free_used = data['free_used']
+    cpu_load = data['cpu_load']
+    run_time = data['run_time']
+    monitor_obj = models.MonitorData(ip=ip, date=data_time, free_used=free_used, cpu_load=cpu_load, run_time=run_time)
+    monitor_obj.save()
+    return HttpResponse("OK")
+
+
+def get_mysql_monitor_data(request):
+    data = request.body.decode(encoding='UTF-8')
+    data = json.loads(data)
+    read = data['read']
+    ip = data['ip']
+    Slow_queries = data['Slow_queries']
+    Threads_created = data['Threads_created']
+    TPS = data['TPS']
+    ibp_read_requests = data['ibp_read_requests']
+    port = data['port']
+    Connections = data['Connections']
+    date_time = data['date_time']
+    write = data['write']
+    Questions = data['Questions']
+    ibp_not_read_requests = data['ibp_not_read_requests']
+    QPS = data['QPS']
+    monitor_obj = models.MySQLMonitorData(ip=ip, port=port, date=date_time, read=read, write=write, QPS=QPS, TPS=TPS,
+                                          ibp_read_requests=ibp_read_requests, ibp_not_read_requests=ibp_not_read_requests,
+                                          Slow_queries=Slow_queries, Threads_created=Threads_created, Connections=Connections,
+                                          Questions=Questions)
+    monitor_obj.save()
+    return HttpResponse("OK")
+
+
+@login_required
+@permission_check(1)
+def index_get_monitor(request):
+    db, cur = create_mysql_conn()
+    sql = "select date,cpu_load,free_used from MDBMP_monitordata order by id desc limit 10"
+    cur.execute(sql)
+    data = cur.fetchall()
+    data = json.dumps(data, cls=JsonExtendEncoder)
+    db.close()
+    return HttpResponse(data)
+
+
+@login_required
+@permission_check(2)
+def db_monitor_get(request):
+    db, cur = create_mysql_conn()
+    sql = "select QPS,TPS,date from MDBMP_mysqlmonitordata order by id desc limit 10"
+    cur.execute(sql)
+    data = cur.fetchall()
+    data = json.dumps(data, cls=JsonExtendEncoder)
+    db.close()
+    return HttpResponse(data)
+
+
+@login_required
+@permission_check(2)
+def db_monitor2_get(request):
+    db, cur = create_mysql_conn()
+    sql = "select `read`,`write`,Slow_queries,Threads_created,ibp_not_read_requests," \
+          "ibp_read_requests,Connections,Questions from MDBMP_mysqlmonitordata order by id desc limit 1"
+    cur.execute(sql)
+    data = cur.fetchall()
+    data = json.dumps(data, cls=JsonExtendEncoder)
+    db.close()
+    return HttpResponse(data)
+
+
 @login_required
 def no_permission(request):
     return render(request, 'nopermission.html')
@@ -1003,11 +1083,6 @@ def submit_audit(request):
     sql = request.POST.get("sql")
     apply_user = request.POST.get("apply_user")
     apply_date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-    print(ins_id)
-    print(mysql_user)
-    print(mysql_pwd)
-    print(mysql_db)
-    print(sql)
     sql_audit_obj = models.SQLAudit(ins_id=ins_id,
                                     mysql_user=mysql_user,
                                     mysql_password=mysql_pwd,
@@ -1026,12 +1101,84 @@ def submit_audit(request):
 def get_to_audit(request):
     apply_user = request.GET.get("apply_user")
     db, cur = create_mysql_conn()
-    sql = "select instance_alias,mysql_db,sql_statement,audit_status,apply_date,mysql_user " \
+    sql = "select a.id,instance_alias,mysql_db,sql_statement,audit_status,apply_date,mysql_user " \
           "from MDBMP_sqlaudit a,MDBMP_databaseinstance b " \
           "where a.ins_id=b.id and a.audit_status='未审核' and a.apply_user=%s"
     cur.execute(sql, apply_user)
     data = cur.fetchall()
+    db.close()
     return HttpResponse(json.dumps(data, cls=JsonExtendEncoder))
+
+
+@login_required
+@permission_check(6)
+def get_to_pass_audit(request):
+    apply_user = request.GET.get("apply_user")
+    db, cur = create_mysql_conn()
+    sql = "select a.id,instance_alias,mysql_db,sql_statement,audit_status,audit_user" \
+          ",apply_date,mysql_user,online_status,online_date,audit_date " \
+          "from MDBMP_sqlaudit a,MDBMP_databaseinstance b " \
+          "where a.ins_id=b.id and a.audit_status='已通过' and a.apply_user=%s"
+    cur.execute(sql, apply_user)
+    data = cur.fetchall()
+    db.close()
+    return HttpResponse(json.dumps(data, cls=JsonExtendEncoder))
+
+
+@login_required
+@permission_check(6)
+def get_to_not_pass_audit(request):
+    apply_user = request.GET.get("apply_user")
+    db, cur = create_mysql_conn()
+    sql = "select a.id,instance_alias,mysql_db,sql_statement,audit_status,audit_date,audit_user" \
+          ",apply_date,mysql_user,reasons_for_failure " \
+          "from MDBMP_sqlaudit a,MDBMP_databaseinstance b " \
+          "where a.ins_id=b.id and a.audit_status='未通过' and a.apply_user=%s"
+    cur.execute(sql, apply_user)
+    data = cur.fetchall()
+    db.close()
+    return HttpResponse(json.dumps(data, cls=JsonExtendEncoder))
+
+
+def checked(request):
+    
+    return HttpResponse("OK")
+
+
+@login_required
+@permission_check(6)
+def online_sql(request):
+    id = request.POST.get("id")
+    print(id)
+    sql = "select ip,port,mysql_user,mysql_password,mysql_db,sql_statement " \
+          "from MDBMP_server a,MDBMP_databaseinstance b,MDBMP_sqlaudit c " \
+          "where a.id=b.server_id and b.id=c.ins_id and c.id=%s"
+    db, cur = create_mysql_conn()
+    cur.execute(sql, id)
+    data = cur.fetchall()
+    db.close()
+    mysql_ip = data[0]['ip']
+    mysql_port = data[0]['port']
+    mysql_user = data[0]['mysql_user']
+    mysql_password = data[0]['mysql_password']
+    mysql_db = data[0]['mysql_db']
+    sql_statement = data[0]['sql_statement']
+    try:
+        db = pymysql.connect(host=mysql_ip, user=mysql_user, passwd=mysql_password, port=mysql_port, db=mysql_db)
+        cur = db.cursor()
+        cur.execute(sql_statement)
+        db.commit()
+        cur.close()
+    except (pymysql.err.OperationalError, pymysql.err.ProgrammingError) as error:
+        return HttpResponse(json.dumps({'status': 1, "error": repr(error)}))
+    else:
+        online_date = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        sql_obj = models.SQLAudit.objects.get(id=id)
+        sql_obj.online_status = '已上线'
+        sql_obj.online_date = online_date
+        sql_obj.save()
+        return HttpResponse(json.dumps({"status": 0}))
+
 
 @login_required
 @permission_check(7)

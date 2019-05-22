@@ -86,3 +86,29 @@ class SQLAudit(models.Model):
     audit_date = models.DateTimeField(null=True)
     online_date = models.DateTimeField(null=True)
     reasons_for_failure = models.CharField(null=True, unique=False, max_length=500)
+
+
+class MonitorData(models.Model):
+    id = models.AutoField(primary_key=True)
+    ip = models.CharField(null=False, unique=False, max_length=50)
+    date = models.DateTimeField(null=False)
+    run_time = models.CharField(null=True, unique=False, max_length=50)
+    cpu_load = models.DecimalField(max_digits=10, decimal_places=2)
+    free_used = models.DecimalField(max_digits=10, decimal_places=2)
+
+
+class MySQLMonitorData(models.Model):
+    id = models.AutoField(primary_key=True)
+    ip = models.CharField(null=False, unique=False, max_length=50)
+    port = models.CharField(null=False, unique=False, max_length=50)
+    date = models.DateTimeField(null=False)
+    read = models.DecimalField(max_digits=10, decimal_places=2)
+    write = models.DecimalField(max_digits=10, decimal_places=2)
+    Slow_queries = models.DecimalField(max_digits=10, decimal_places=2)
+    Threads_created = models.DecimalField(max_digits=10, decimal_places=2)
+    TPS = models.DecimalField(max_digits=10, decimal_places=2)
+    ibp_read_requests = models.DecimalField(max_digits=10, decimal_places=2)
+    Connections = models.DecimalField(max_digits=10, decimal_places=2)
+    Questions = models.DecimalField(max_digits=10, decimal_places=2)
+    ibp_not_read_requests = models.DecimalField(max_digits=10, decimal_places=2)
+    QPS = models.DecimalField(max_digits=10, decimal_places=2)

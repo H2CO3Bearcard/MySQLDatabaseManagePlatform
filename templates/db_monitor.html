@@ -23,6 +23,7 @@
     <!-- Custom and plugin javascript -->
     <script src="/static/js/inspinia.js"></script>
     <script src="/static/js/plugins/pace/pace.min.js"></script>
+    <script src="/static/js/plugins/chartJs/Chart.min.js"></script>
 </head>
 
 <body>
@@ -89,8 +90,215 @@
                 </ol>
             </div>
         </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox ">
+                    <div class="ibox-content">
+                        <div>
+                            <h1 class="m-b-xs">数据库每秒查询数QPS</h1>
+                        </div>
+
+                        <div>
+                            <canvas id="DbQPS" height="536" width="2300"
+                                    style="display: block; width: 1150px; height: 268px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="ibox ">
+                    <div class="ibox-content">
+                        <div>
+                            <h1 class="m-b-xs">数据库每秒事务数TPS</h1>
+                        </div>
+
+                        <div>
+                            <canvas id="DbTPS" height="536" width="2300"
+                                    style="display: block; width: 1150px; height: 268px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="ibox ">
+                    <div class="ibox-content">
+                        <div>
+                            <h1 class="m-b-xs">InnoDB缓存命中率</h1>
+                        </div>
+
+                        <div>
+                            <canvas id="InnoDBBuffer" height="606" width="1300"
+                                    style="display: block; width: 650px; height: 303px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="ibox ">
+                    <div class="ibox-content">
+                        <div>
+                            <h1 class="m-b-xs">线程缓存命中率</h1>
+                        </div>
+
+                        <div>
+                            <canvas id="ThreadCache" height="606" width="1300"
+                                    style="display: block; width: 650px; height: 303px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="ibox ">
+                    <div class="ibox-content">
+                        <div>
+                            <h1 class="m-b-xs">数据库读写比例</h1>
+                        </div>
+
+                        <div>
+                            <canvas id="ReadWrite" height="606" width="1300"
+                                    style="display: block; width: 650px; height: 303px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="ibox ">
+                    <div class="ibox-content">
+                        <div>
+                            <h1 class="m-b-xs">慢查询比例</h1>
+                        </div>
+
+                        <div>
+                            <canvas id="SlowQuery" height="606" width="1300"
+                                    style="display: block; width: 650px; height: 303px;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+<script>
+    function load_data(){
+        $.ajax({
+                url: '/db_monitor_get/',
+                type: 'POST',
+                dataType: 'JSON',
+                success: function (data) {
+                    var lineData = {
+                        labels: [data[9]['date'],data[8]['date'],data[7]['date'],
+                            data[6]['date'],data[5]['date'],data[4]['date'],data[3]['date']
+                            ,data[2]['date'],data[1]['date'],data[0]['date']],
+                        datasets: [
+                            {
+                                label: "QPS",
+                                backgroundColor: "rgba(26,179,148,0.5)",
+                                borderColor: "rgba(26,179,148,0.7)",
+                                pointBackgroundColor: "rgba(26,179,148,1)",
+                                pointBorderColor: "#fff",
+                                data: [data[9]['QPS'], data[8]['QPS'], data[7]['QPS'], data[6]['QPS'],
+                                    data[5]['QPS'], data[4]['QPS'], data[3]['QPS'],data[2]['QPS'],
+                                data[1]['QPS'],data[0]['QPS']]
+                            }
+                        ]
+                    };
+                    var lineOptions = {
+                        responsive: true,
+                        animation : false,
+                        bezierCurve: false,
+                    };
+                    var QPS = document.getElementById("DbQPS").getContext("2d");
+                    new Chart(QPS, {type: 'line', data: lineData, options:lineOptions});
 
+                    var CpuData = {
+                        labels: [data[9]['date'],data[8]['date'],data[7]['date'],
+                            data[6]['date'],data[5]['date'],data[4]['date'],data[3]['date']
+                            ,data[2]['date'],data[1]['date'],data[0]['date']],
+                        datasets: [
+                            {
+                                label: "TPS",
+                                backgroundColor: "rgba(26,179,148,0.5)",
+                                borderColor: "rgba(26,179,148,0.7)",
+                                pointBackgroundColor: "rgba(26,179,148,1)",
+                                pointBorderColor: "#fff",
+                                data: [data[9]['TPS'], data[8]['TPS'], data[7]['TPS'], data[6]['TPS'],
+                                    data[5]['TPS'], data[4]['TPS'], data[3]['TPS'],data[2]['TPS'],
+                                data[1]['TPS'],data[0]['TPS']]
+                           }
+                        ]
+                    };
+                    var TPS = document.getElementById("DbTPS").getContext("2d");
+                    new Chart(TPS, {type: 'line', data: CpuData, options:lineOptions});
+
+                }
+            });
+    }
+    function load_data2() {
+        $.ajax({
+            url: '/db_monitor2_get/',
+            type: 'POST',
+            dataType: 'JSON',
+            success: function (data) {
+                console.log(data);
+                var doughnutOptions = {
+                    percentageInnerCutout: 0,
+                    responsive: true,
+                    animation : false
+                };
+                var doughnutData1 = {
+                    labels: ["命中","未命中" ],
+                    datasets: [{
+                        data: [data[0]['ibp_read_requests'],data[0]['ibp_not_read_requests']],
+                        backgroundColor: ["#a3e1d4","#b5b8cf"]
+                    }]
+                };
+                var ctx1 = document.getElementById("InnoDBBuffer").getContext("2d");
+                new Chart(ctx1, {type: 'doughnut', data: doughnutData1, options:doughnutOptions});
+                var doughnutData2 = {
+                    labels: ["连接数","创建线程数" ],
+                    datasets: [{
+                        data: [data[0]['Connections'],data[0]['Threads_created']],
+                        backgroundColor: ["#a3e1d4","#b5b8cf"]
+                    }]
+                };
+                var ctx2 = document.getElementById("ThreadCache").getContext("2d");
+                new Chart(ctx2, {type: 'doughnut', data: doughnutData2, options:doughnutOptions});
+                var doughnutData3 = {
+                    labels: ["读操作","写操作" ],
+                    datasets: [{
+                        data: [data[0]['read'],data[0]['write']],
+                        backgroundColor: ["#a3e1d4","#b5b8cf"]
+                    }]
+                };
+                var ctx3 = document.getElementById("ReadWrite").getContext("2d");
+                new Chart(ctx3, {type: 'doughnut', data: doughnutData3, options:doughnutOptions});
+                var doughnutData4 = {
+                    labels: ["慢查询数","正常查询数" ],
+                    datasets: [{
+                        data: [data[0]['Slow_queries'],data[0]['Questions']-data[0]['Slow_queries']],
+                        backgroundColor: ["#a3e1d4","#b5b8cf"]
+                    }]
+                };
+                var ctx4 = document.getElementById("SlowQuery").getContext("2d");
+                new Chart(ctx4, {type: 'doughnut', data: doughnutData4, options:doughnutOptions});
+            }
+        });
+    }
+    load_data();
+    load_data2();
+    $(function(){
+        setInterval(function(){
+            load_data();
+            load_data2();
+        }, 5000);
+    });
+</script>
+<script src="/static/public_js/fixedsidebar.js"></script>
 </body>
 </html>
